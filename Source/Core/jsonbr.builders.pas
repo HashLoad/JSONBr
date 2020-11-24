@@ -163,7 +163,7 @@ type
     function BeginArray: TJSONBrObject;
     function EndObject: TJSONBrObject;
     function EndArray: TJSONBrObject;
-    function AddPair(const APair, AValue: String): TJSONBrObject; overload;
+    function AddPair(const APair: String; const AValue: String): TJSONBrObject; overload;
     function AddPair(const APair: String; const AValue: Integer): TJSONBrObject; overload;
     function AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject; overload;
     function ToJSON: String;
@@ -221,7 +221,7 @@ begin
   FJSON := FJSON + '{';
 end;
 
-function TJSONBrObject.AddPair(const APair, AValue: String): TJSONBrObject;
+function TJSONBrObject.AddPair(const APair: String; const AValue: String): TJSONBrObject;
 begin
   Result := Self;
   FJSON := FJSON + StringToJSON(APair) + ':' + ValueToJSON(AValue) + ',';

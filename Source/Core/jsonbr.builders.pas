@@ -391,60 +391,65 @@ begin
   end;
 
   LTypeInfo := AProperty.PropertyType.Handle;
-  case AProperty.PropertyType.TypeKind of
-    tkInt64:
-      Result := AProperty.GetValue(AInstance).AsInt64;
-    tkInteger, tkSet:
-      Result := AProperty.GetValue(AInstance).AsInteger;
-    tkUString, tkLString, tkWString, tkString, tkChar, tkWChar:
-      Result := AProperty.GetValue(AInstance).AsString;
-    tkFloat:
-      case GetTypeData(LTypeInfo)^.FloatType of
-        ftSingle:
-          begin
-            Result := StrToFloat(AProperty.GetValue(AInstance).AsString, FSettingsUS);
-          end;
-        ftDouble:
-          begin
-            if (LTypeInfo = TypeInfo(TDateTime)) or
-               (LTypeInfo = TypeInfo(TDate))     or
-               (LTypeInfo = TypeInfo(TTime))     then
+  try
+    case AProperty.PropertyType.TypeKind of
+      tkInt64:
+        Result := AProperty.GetValue(AInstance).AsInt64;
+      tkInteger, tkSet:
+        Result := AProperty.GetValue(AInstance).AsInteger;
+      tkUString, tkLString, tkWString, tkString, tkChar, tkWChar:
+        Result := AProperty.GetValue(AInstance).AsString;
+      tkFloat:
+        case GetTypeData(LTypeInfo)^.FloatType of
+          ftSingle:
             begin
-              Result := DateTimeToIso8601(AProperty.GetValue(AInstance).AsExtended);
-            end
-            else
-              Result := AProperty.GetValue(AInstance).AsExtended;
-          end;
-        ftExtended:
-          Result := AProperty.GetValue(AInstance).AsExtended;
-        ftComp:
-          Result := AProperty.GetValue(AInstance).AsExtended;
-        ftCurr:
-          Result := AProperty.GetValue(AInstance).AsCurrency;
-      end;
-    tkVariant:
-      Result := AProperty.GetValue(AInstance).AsVariant;
-    tkRecord:
-      Result := AProperty.GetValue(AInstance).AsVariant;
-    tkClass:
-      begin
-        LObject := AProperty.GetValue(AInstance).AsObject;
-        if LObject <> nil then
-          TJSONBrVariantData(Result).Init(ObjectToJSON(LObject))
-        else
+              Result := StrToFloat(AProperty.GetValue(AInstance).AsString, FSettingsUS);
+            end;
+          ftDouble:
+            begin
+              if (LTypeInfo = TypeInfo(TDateTime)) or
+                 (LTypeInfo = TypeInfo(TDate))     or
+                 (LTypeInfo = TypeInfo(TTime))     then
+              begin
+                Result := DateTimeToIso8601(AProperty.GetValue(AInstance).AsExtended);
+              end
+              else
+                Result := AProperty.GetValue(AInstance).AsExtended;
+            end;
+          ftExtended:
+            Result := AProperty.GetValue(AInstance).AsExtended;
+          ftComp:
+            Result := AProperty.GetValue(AInstance).AsExtended;
+          ftCurr:
+            Result := AProperty.GetValue(AInstance).AsCurrency;
+        end;
+      tkVariant:
+        Result := AProperty.GetValue(AInstance).AsVariant;
+      tkRecord:
+        Result := AProperty.GetValue(AInstance).AsVariant;
+      tkClass:
+        begin
+          LObject := AProperty.GetValue(AInstance).AsObject;
+          if LObject <> nil then
+            TJSONBrVariantData(Result).Init(ObjectToJSON(LObject))
+          else
+            Result := Null;
+        end;
+      tkEnumeration:
+        begin
+          if IsBoolean() then
+            Result := AProperty.GetValue(AInstance).AsBoolean
+          else
+            Result := GetEnumValue(LTypeInfo, AProperty.GetValue(AInstance).AsString) >= 0;
+        end;
+      tkDynArray:
+        // Fazer tratamento em base64 para devolver o valor
+        if IsBlob(AProperty.PropertyType.Handle) then
           Result := Null;
-      end;
-    tkEnumeration:
-      begin
-        if IsBoolean() then
-          Result := AProperty.GetValue(AInstance).AsBoolean
-        else
-          Result := GetEnumValue(LTypeInfo, AProperty.GetValue(AInstance).AsString) >= 0;
-      end;
-    tkDynArray:
-      // Fazer tratamento em base64 para devolver o valor
-      if IsBlob(AProperty.PropertyType.Handle) then
-        Result := Null;
+    end;
+  except
+    on E: Exception do
+      raise Exception.Create('Erro no GetValue() da propriedade [' + AProperty.Name + ']' + sLineBreak + E.Message);
   end;
 end;
 
@@ -470,44 +475,49 @@ begin
       FNotifyEventSetValue(AInstance, AProperty, AValue);
 
     LTypeInfo := AProperty.PropertyType.Handle;
-    case AProperty.PropertyType.TypeKind of
-      tkString, tkWString, tkUString, tkWChar, tkLString, tkChar:
-        if TVarData(AValue).VType <= varNull then
-          AProperty.SetValue(AInstance, '')
-        else
-          AProperty.SetValue(AInstance, String(AValue));
-      tkInteger, tkSet, tkInt64:
-        AProperty.SetValue(AInstance, Integer(AValue));
-      tkFloat:
-        if TVarData(AValue).VType <= varNull then
-          AProperty.SetValue(AInstance, 0)
-        else
-        if (LTypeInfo = TypeInfo(TDateTime)) or
-           (LTypeInfo = TypeInfo(TDate)) or
-           (LTypeInfo = TypeInfo(TTime)) then
-          AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue))
-        else
-          AProperty.SetValue(AInstance, Double(AValue));
-      tkVariant:
-        AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
-      tkRecord:
-        AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
-      tkClass:
-        begin
-          LObject := AProperty.GetValue(AInstance).AsObject;
-          if LObject <> nil then
-            JSONVariantData(AValue).ToObject(LObject);
-        end;
-      tkEnumeration:
-        begin
-          if IsBoolean() then
-            AProperty.SetValue(AInstance, Boolean(AValue))
+    try
+      case AProperty.PropertyType.TypeKind of
+        tkString, tkWString, tkUString, tkWChar, tkLString, tkChar:
+          if TVarData(AValue).VType <= varNull then
+            AProperty.SetValue(AInstance, '')
           else
-            AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
-        end;
-      tkDynArray:
-        // Fazer tratamento em base64 para devolver o valor
-//        if IsBlob(AProperty.PropertyType.Handle) then
+            AProperty.SetValue(AInstance, String(AValue));
+        tkInteger, tkSet, tkInt64:
+          AProperty.SetValue(AInstance, Integer(AValue));
+        tkFloat:
+          if TVarData(AValue).VType <= varNull then
+            AProperty.SetValue(AInstance, 0)
+          else
+          if (LTypeInfo = TypeInfo(TDateTime)) or
+             (LTypeInfo = TypeInfo(TDate)) or
+             (LTypeInfo = TypeInfo(TTime)) then
+            AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue))
+          else
+            AProperty.SetValue(AInstance, Double(AValue));
+        tkVariant:
+          AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+        tkRecord:
+          AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+        tkClass:
+          begin
+            LObject := AProperty.GetValue(AInstance).AsObject;
+            if LObject <> nil then
+              JSONVariantData(AValue).ToObject(LObject);
+          end;
+        tkEnumeration:
+          begin
+            if IsBoolean() then
+              AProperty.SetValue(AInstance, Boolean(AValue))
+            else
+              AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+          end;
+        tkDynArray:
+          // Fazer tratamento em base64 para devolver o valor
+//          if IsBlob(AProperty.PropertyType.Handle) then
+      end;
+    except
+      on E: Exception do
+        raise Exception.Create('Erro no SetValue() da propriedade [' + AProperty.Name + ']' + sLineBreak + E.Message);
     end;
   end;
 end;

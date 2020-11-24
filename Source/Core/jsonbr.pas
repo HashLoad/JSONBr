@@ -30,6 +30,8 @@ uses
   jsonbr.builders;
 
 type
+  TJSONBrObject = jsonbr.builders.TJSONBrObject;
+
   TJSONBr = class
   private
     class var
@@ -54,11 +56,45 @@ type
 
     class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
     class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
+
+    class function BeginObject: TJSONBrObject;
+    class function BeginArray: TJSONBrObject;
+    class function EndObject: TJSONBrObject;
+    class function EndArray: TJSONBrObject;
+    class function AddPair(const APair: String; const AValue: String): TJSONBrObject; overload;
+    class function AddPair(const APair: String; const AValue: Integer): TJSONBrObject; overload;
+    class function AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject; overload;
+    class function ToJSON: String;
   end;
 
 implementation
 
 { TJSONBr }
+
+class function TJSONBr.AddPair(const APair, AValue: String): TJSONBrObject;
+begin
+  Result := FJSONObject.AddPair(APair, AValue);
+end;
+
+class function TJSONBr.AddPair(const APair: String; const AValue: Integer): TJSONBrObject;
+begin
+  Result := FJSONObject.AddPair(APair, AValue);
+end;
+
+class function TJSONBr.AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject;
+begin
+  Result := FJSONObject.AddPair(APair, AValue);
+end;
+
+class function TJSONBr.BeginArray: TJSONBrObject;
+begin
+  Result := FJSONObject.BeginArray;
+end;
+
+class function TJSONBr.BeginObject: TJSONBrObject;
+begin
+  Result := FJSONObject.BeginObject;
+end;
 
 class constructor TJSONBr.Create;
 begin
@@ -69,6 +105,16 @@ class destructor TJSONBr.Destroy;
 begin
   FJSONObject.Free;
   inherited;
+end;
+
+class function TJSONBr.EndArray: TJSONBrObject;
+begin
+  Result := FJSONObject.EndArray;
+end;
+
+class function TJSONBr.EndObject: TJSONBrObject;
+begin
+  Result := FJSONObject.EndObject;
 end;
 
 class procedure TJSONBr.SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
@@ -132,6 +178,11 @@ end;
 class procedure TJSONBr.SetNotifyEventSetValue(const Value: TNotifyEventSetValue);
 begin
   FJSONObject.OnSetValue := Value;
+end;
+
+class function TJSONBr.ToJSON: String;
+begin
+  Result := FJSONObject.ToJSON;
 end;
 
 class function TJSONBr.JsonToObjectList<T>(const AJson: string): TObjectList<T>;

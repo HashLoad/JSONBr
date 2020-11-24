@@ -53,10 +53,7 @@ type
       const AJson: string): Boolean; overload;
     class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>;
     class procedure JsonToObject(const AJson: string; AObject: TObject); overload;
-
-    class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
-    class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
-
+    // Create functional
     class function BeginObject: TJSONBrObject;
     class function BeginArray: TJSONBrObject;
     class function EndObject: TJSONBrObject;
@@ -65,6 +62,9 @@ type
     class function AddPair(const APair: String; const AValue: Integer): TJSONBrObject; overload;
     class function AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject; overload;
     class function ToJSON: String;
+    // Events GetValue and SetValue
+    class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
+    class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
   end;
 
 implementation

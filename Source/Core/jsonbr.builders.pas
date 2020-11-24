@@ -39,8 +39,8 @@ uses
 type
   TJSONBrObject = class;
 
-  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject; const AInstance: TObject; const AProperty: TRttiProperty; var AResult: Variant) of Object;
-  TNotifyEventSetValue = procedure(const AInstance: TObject; const AProperty: TRttiProperty; const AValue: Variant) of Object;
+  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject; const AInstance: TObject; const AProperty: TRttiProperty; var AResult: Variant; var ABreak: Boolean) of Object;
+  TNotifyEventSetValue = procedure(const AInstance: TObject; const AProperty: TRttiProperty; const AValue: Variant; var ABreak: Boolean) of Object;
 //  TJSONBrOption = (joIgnoreEmptyStrings,
 //                   joIgnoreEmptyArrays,
 //                   joDateIsUTC,
@@ -142,9 +142,9 @@ type
     function JSONVariant(const AJson: String): Variant; overload;
     function JSONVariant(const AValues: TVariantDynamicArray): Variant; overload;
     function GetInstanceProp(AInstance: TObject; AProperty: TRttiProperty): Variant;
-    class function IsBlob(const ATypeInfo: PTypeInfo): Boolean;
     class procedure SetInstanceProp(const AInstance: TObject; const AProperty:
       TRttiProperty; const AValue: Variant);
+    class function IsBlob(const ATypeInfo: PTypeInfo): Boolean;
     class function JSONVariantData(const JSONVariant: Variant): TJSONBrVariantData;
     class function StringToJSON(const AText: string): string;
     class function ValueToJSON(const AValue: Variant): string;
@@ -372,6 +372,7 @@ var
   LValI32: Int32;
   LObject: TObject;
   LTypeInfo: PTypeInfo;
+  LBreak: Boolean;
 
   function IsBoolean: Boolean;
   var
@@ -386,8 +387,10 @@ begin
   // Notify Event
   if Assigned(FNotifyEventGetValue) then
   begin
-    FNotifyEventGetValue(Self, AInstance, AProperty, Result);
-    Exit;
+    LBreak := False;
+    FNotifyEventGetValue(Self, AInstance, AProperty, Result, LBreak);
+    if LBreak then
+      Exit;
   end;
 
   LTypeInfo := AProperty.PropertyType.Handle;
@@ -456,6 +459,7 @@ end;
 class procedure TJSONBrObject.SetInstanceProp(const AInstance: TObject; const AProperty:
       TRttiProperty; const AValue: Variant);
 var
+  LBreak: Boolean;
   LTypeInfo: PTypeInfo;
   LObject: TObject;
 
@@ -472,7 +476,12 @@ begin
   begin
     // Notify Event
     if Assigned(FNotifyEventSetValue) then
-      FNotifyEventSetValue(AInstance, AProperty, AValue);
+    begin
+      LBreak := False;
+      FNotifyEventSetValue(AInstance, AProperty, AValue, LBreak);
+      if LBreak then
+        Exit;
+    end;
 
     LTypeInfo := AProperty.PropertyType.Handle;
     try

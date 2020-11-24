@@ -159,13 +159,15 @@ type
     function JSONToObject<T: class, constructor>(const AJson: String): T; overload;
     function JSONToObjectList<T: class, constructor>(const AJson: String): TObjectList<T>;
 
-    function BeginObject: TJSONBrObject;
+    function BeginObject(const AValue: String = ''): TJSONBrObject;
     function BeginArray: TJSONBrObject;
     function EndObject: TJSONBrObject;
     function EndArray: TJSONBrObject;
     function AddPair(const APair: String; const AValue: String): TJSONBrObject; overload;
     function AddPair(const APair: String; const AValue: Integer): TJSONBrObject; overload;
     function AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject; overload;
+    function AddPairArray(const APair: String; const AValue: array of string): TJSONBrObject; overload;
+    function AddPairArray(const APair: String; const AValue: array of Integer): TJSONBrObject; overload;
     function ToJSON: String;
 
     class property OnSetValue: TNotifyEventSetValue read FNotifyEventSetValue write FNotifyEventSetValue;
@@ -215,16 +217,43 @@ begin
   FJSON := FJSON + '[';
 end;
 
-function TJSONBrObject.BeginObject: TJSONBrObject;
+function TJSONBrObject.BeginObject(const AValue: String): TJSONBrObject;
 begin
   Result := Self;
-  FJSON := FJSON + '{';
+  if Length(AValue) > 0 then
+    FJSON := FJSON + StringToJSON(AValue) + ':{'
+  else
+    FJSON := FJSON + '{';
 end;
 
 function TJSONBrObject.AddPair(const APair: String; const AValue: String): TJSONBrObject;
 begin
   Result := Self;
   FJSON := FJSON + StringToJSON(APair) + ':' + ValueToJSON(AValue) + ',';
+end;
+
+function TJSONBrObject.AddPairArray(const APair: String; const AValue: array of string): TJSONBrObject;
+var
+  LFor: Integer;
+begin
+  Result := Self;
+  FJSON := FJSON + StringToJSON(APair) + ':[';
+  for LFor := Low(AValue) to High(AValue) do
+    FJSON := FJSON + ValueToJSON(AValue[LFor]) + ',';
+  FJSON[Length(FJSON)] := ']';
+  FJSON := FJSON + ',';
+end;
+
+function TJSONBrObject.AddPairArray(const APair: String; const AValue: array of Integer): TJSONBrObject;
+var
+  LFor: Integer;
+begin
+  Result := Self;
+  FJSON := FJSON + StringToJSON(APair) + ':[';
+  for LFor := Low(AValue) to High(AValue) do
+    FJSON := FJSON + ValueToJSON(AValue[LFor]) + ',';
+  FJSON[Length(FJSON)] := ']';
+  FJSON := FJSON + ',';
 end;
 
 function TJSONBrObject.AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject;
@@ -246,7 +275,9 @@ end;
 
 function TJSONBrObject.ToJSON: String;
 begin
-  Result := FJSON;
+  if FJSON[Length(FJSON)] = ',' then
+    FJSON[Length(FJSON)] := ' ';
+  Result := TrimRight(FJSON);
   FJSON := '';
 end;
 
@@ -310,6 +341,15 @@ end;
 function TJSONBrObject.EndObject: TJSONBrObject;
 begin
   Result := Self;
+  // Tratamento para objeto vazio
+  if Length(FJSON) = 1 then
+  begin
+    if FJSON[Length(FJSON)] = '{' then
+    begin
+      FJSON := '{}';
+      Exit;
+    end;
+  end;
   FJSON[Length(FJSON)] := '}';
   FJSON := FJSON + ',';
 end;

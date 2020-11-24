@@ -17,6 +17,12 @@ type
     // Simple single Test
     [Test]
     procedure TestAddPair_1;
+    [Test]
+    procedure TestAddValue_1;
+    [Test]
+    procedure TestObject_Empty;
+    [Test]
+    procedure TestArray_Empty;
   end;
 
 implementation
@@ -55,6 +61,55 @@ begin
                    .EndObject
                  .EndArray
                .EndArray
+             .ToJSON;
+
+  Assert.AreEqual(LResult, LJSON, 'Não gerou conforme valor da constante!');
+end;
+
+procedure TTestJSONBr.TestAddValue_1;
+var
+  LResult: String;
+const
+  LJSON = '{"nome":"Fulano","idade":90,"filmes_preferidos":["Pulp Fiction","Clube da Luta"],"contatos":{"telefone":"(11)91111-2222","emails":["fulano@gmail.com","fulano@yahoo.com"]}}';
+begin
+  LResult := TJSONBr
+              .BeginObject
+                .AddPair('nome', 'Fulano')
+                .AddPair('idade', 90)
+                .AddPairArray('filmes_preferidos', ['Pulp Fiction', 'Clube da Luta'])
+                .BeginObject('contatos')
+                  .AddPair('telefone', '(11)91111-2222')
+                  .AddPairArray('emails', ['fulano@gmail.com', 'fulano@yahoo.com'])
+                .EndObject
+              .EndObject
+            .ToJSON;
+
+  Assert.AreEqual(LResult, LJSON, 'Não gerou conforme valor da constante!');
+end;
+
+procedure TTestJSONBr.TestArray_Empty;
+var
+  LResult: String;
+const
+  LJSON = '[]';
+begin
+  LResult := TJSONBr
+               .BeginArray
+               .EndArray
+             .ToJSON;
+
+  Assert.AreEqual(LResult, LJSON, 'Não gerou conforme valor da constante!');
+end;
+
+procedure TTestJSONBr.TestObject_Empty;
+var
+  LResult: String;
+const
+  LJSON = '{}';
+begin
+  LResult := TJSONBr
+               .BeginObject
+               .EndObject
              .ToJSON;
 
   Assert.AreEqual(LResult, LJSON, 'Não gerou conforme valor da constante!');

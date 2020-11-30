@@ -39,8 +39,15 @@ uses
 type
   TJSONBrObject = class;
 
-  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject; const AInstance: TObject; const AProperty: TRttiProperty; var AResult: Variant; var ABreak: Boolean) of Object;
-  TNotifyEventSetValue = procedure(const AInstance: TObject; const AProperty: TRttiProperty; const AValue: Variant; var ABreak: Boolean) of Object;
+  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject; 
+                                   const AInstance: TObject; 
+								   const AProperty: TRttiProperty; 
+								   var AResult: Variant; 
+								   var ABreak: Boolean) of Object;
+  TNotifyEventSetValue = procedure(const AInstance: TObject; 
+                                   const AProperty: TRttiProperty; 
+								   const AValue: Variant; 
+								   var ABreak: Boolean) of Object;
 //  TJSONBrOption = (joIgnoreEmptyStrings,
 //                   joIgnoreEmptyArrays,
 //                   joDateIsUTC,

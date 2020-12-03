@@ -39,8 +39,15 @@ uses
 type
   TJSONBrObject = class;
 
-  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject; const AInstance: TObject; const AProperty: TRttiProperty; var AResult: Variant) of Object;
-  TNotifyEventSetValue = procedure(const AInstance: TObject; const AProperty: TRttiProperty; const AValue: Variant) of Object;
+  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject; 
+                                   const AInstance: TObject; 
+								   const AProperty: TRttiProperty; 
+								   var AResult: Variant; 
+								   var ABreak: Boolean) of Object;
+  TNotifyEventSetValue = procedure(const AInstance: TObject; 
+                                   const AProperty: TRttiProperty; 
+								   const AValue: Variant; 
+								   var ABreak: Boolean) of Object;
 //  TJSONBrOption = (joIgnoreEmptyStrings,
 //                   joIgnoreEmptyArrays,
 //                   joDateIsUTC,
@@ -142,9 +149,9 @@ type
     function JSONVariant(const AJson: String): Variant; overload;
     function JSONVariant(const AValues: TVariantDynamicArray): Variant; overload;
     function GetInstanceProp(AInstance: TObject; AProperty: TRttiProperty): Variant;
-    class function IsBlob(const ATypeInfo: PTypeInfo): Boolean;
     class procedure SetInstanceProp(const AInstance: TObject; const AProperty:
       TRttiProperty; const AValue: Variant);
+    class function IsBlob(const ATypeInfo: PTypeInfo): Boolean;
     class function JSONVariantData(const JSONVariant: Variant): TJSONBrVariantData;
     class function StringToJSON(const AText: string): string;
     class function ValueToJSON(const AValue: Variant): string;
@@ -159,13 +166,15 @@ type
     function JSONToObject<T: class, constructor>(const AJson: String): T; overload;
     function JSONToObjectList<T: class, constructor>(const AJson: String): TObjectList<T>;
 
-    function BeginObject: TJSONBrObject;
+    function BeginObject(const AValue: String = ''): TJSONBrObject;
     function BeginArray: TJSONBrObject;
     function EndObject: TJSONBrObject;
     function EndArray: TJSONBrObject;
-    function AddPair(const APair, AValue: String): TJSONBrObject; overload;
+    function AddPair(const APair: String; const AValue: String): TJSONBrObject; overload;
     function AddPair(const APair: String; const AValue: Integer): TJSONBrObject; overload;
     function AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject; overload;
+    function AddPairArray(const APair: String; const AValue: array of string): TJSONBrObject; overload;
+    function AddPairArray(const APair: String; const AValue: array of Integer): TJSONBrObject; overload;
     function ToJSON: String;
 
     class property OnSetValue: TNotifyEventSetValue read FNotifyEventSetValue write FNotifyEventSetValue;
@@ -215,16 +224,43 @@ begin
   FJSON := FJSON + '[';
 end;
 
-function TJSONBrObject.BeginObject: TJSONBrObject;
+function TJSONBrObject.BeginObject(const AValue: String): TJSONBrObject;
 begin
   Result := Self;
-  FJSON := FJSON + '{';
+  if Length(AValue) > 0 then
+    FJSON := FJSON + StringToJSON(AValue) + ':{'
+  else
+    FJSON := FJSON + '{';
 end;
 
-function TJSONBrObject.AddPair(const APair, AValue: String): TJSONBrObject;
+function TJSONBrObject.AddPair(const APair: String; const AValue: String): TJSONBrObject;
 begin
   Result := Self;
   FJSON := FJSON + StringToJSON(APair) + ':' + ValueToJSON(AValue) + ',';
+end;
+
+function TJSONBrObject.AddPairArray(const APair: String; const AValue: array of string): TJSONBrObject;
+var
+  LFor: Integer;
+begin
+  Result := Self;
+  FJSON := FJSON + StringToJSON(APair) + ':[';
+  for LFor := Low(AValue) to High(AValue) do
+    FJSON := FJSON + ValueToJSON(AValue[LFor]) + ',';
+  FJSON[Length(FJSON)] := ']';
+  FJSON := FJSON + ',';
+end;
+
+function TJSONBrObject.AddPairArray(const APair: String; const AValue: array of Integer): TJSONBrObject;
+var
+  LFor: Integer;
+begin
+  Result := Self;
+  FJSON := FJSON + StringToJSON(APair) + ':[';
+  for LFor := Low(AValue) to High(AValue) do
+    FJSON := FJSON + ValueToJSON(AValue[LFor]) + ',';
+  FJSON[Length(FJSON)] := ']';
+  FJSON := FJSON + ',';
 end;
 
 function TJSONBrObject.AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject;
@@ -246,7 +282,9 @@ end;
 
 function TJSONBrObject.ToJSON: String;
 begin
-  Result := FJSON;
+  if FJSON[Length(FJSON)] = ',' then
+    FJSON[Length(FJSON)] := ' ';
+  Result := TrimRight(FJSON);
   FJSON := '';
 end;
 
@@ -310,6 +348,15 @@ end;
 function TJSONBrObject.EndObject: TJSONBrObject;
 begin
   Result := Self;
+  // Tratamento para objeto vazio
+  if Length(FJSON) = 1 then
+  begin
+    if FJSON[Length(FJSON)] = '{' then
+    begin
+      FJSON := '{}';
+      Exit;
+    end;
+  end;
   FJSON[Length(FJSON)] := '}';
   FJSON := FJSON + ',';
 end;
@@ -372,6 +419,7 @@ var
   LValI32: Int32;
   LObject: TObject;
   LTypeInfo: PTypeInfo;
+  LBreak: Boolean;
 
   function IsBoolean: Boolean;
   var
@@ -386,71 +434,79 @@ begin
   // Notify Event
   if Assigned(FNotifyEventGetValue) then
   begin
-    FNotifyEventGetValue(Self, AInstance, AProperty, Result);
-    Exit;
+    LBreak := False;
+    FNotifyEventGetValue(Self, AInstance, AProperty, Result, LBreak);
+    if LBreak then
+      Exit;
   end;
 
   LTypeInfo := AProperty.PropertyType.Handle;
-  case AProperty.PropertyType.TypeKind of
-    tkInt64:
-      Result := AProperty.GetValue(AInstance).AsInt64;
-    tkInteger, tkSet:
-      Result := AProperty.GetValue(AInstance).AsInteger;
-    tkUString, tkLString, tkWString, tkString, tkChar, tkWChar:
-      Result := AProperty.GetValue(AInstance).AsString;
-    tkFloat:
-      case GetTypeData(LTypeInfo)^.FloatType of
-        ftSingle:
-          begin
-            Result := StrToFloat(AProperty.GetValue(AInstance).AsString, FSettingsUS);
-          end;
-        ftDouble:
-          begin
-            if (LTypeInfo = TypeInfo(TDateTime)) or
-               (LTypeInfo = TypeInfo(TDate))     or
-               (LTypeInfo = TypeInfo(TTime))     then
+  try
+    case AProperty.PropertyType.TypeKind of
+      tkInt64:
+        Result := AProperty.GetValue(AInstance).AsInt64;
+      tkInteger, tkSet:
+        Result := AProperty.GetValue(AInstance).AsInteger;
+      tkUString, tkLString, tkWString, tkString, tkChar, tkWChar:
+        Result := AProperty.GetValue(AInstance).AsString;
+      tkFloat:
+        case GetTypeData(LTypeInfo)^.FloatType of
+          ftSingle:
             begin
-              Result := DateTimeToIso8601(AProperty.GetValue(AInstance).AsExtended);
-            end
-            else
-              Result := AProperty.GetValue(AInstance).AsExtended;
-          end;
-        ftExtended:
-          Result := AProperty.GetValue(AInstance).AsExtended;
-        ftComp:
-          Result := AProperty.GetValue(AInstance).AsExtended;
-        ftCurr:
-          Result := AProperty.GetValue(AInstance).AsCurrency;
-      end;
-    tkVariant:
-      Result := AProperty.GetValue(AInstance).AsVariant;
-    tkRecord:
-      Result := AProperty.GetValue(AInstance).AsVariant;
-    tkClass:
-      begin
-        LObject := AProperty.GetValue(AInstance).AsObject;
-        if LObject <> nil then
-          TJSONBrVariantData(Result).Init(ObjectToJSON(LObject))
-        else
+              Result := StrToFloat(AProperty.GetValue(AInstance).AsString, FSettingsUS);
+            end;
+          ftDouble:
+            begin
+              if (LTypeInfo = TypeInfo(TDateTime)) or
+                 (LTypeInfo = TypeInfo(TDate))     or
+                 (LTypeInfo = TypeInfo(TTime))     then
+              begin
+                Result := DateTimeToIso8601(AProperty.GetValue(AInstance).AsExtended);
+              end
+              else
+                Result := AProperty.GetValue(AInstance).AsExtended;
+            end;
+          ftExtended:
+            Result := AProperty.GetValue(AInstance).AsExtended;
+          ftComp:
+            Result := AProperty.GetValue(AInstance).AsExtended;
+          ftCurr:
+            Result := AProperty.GetValue(AInstance).AsCurrency;
+        end;
+      tkVariant:
+        Result := AProperty.GetValue(AInstance).AsVariant;
+      tkRecord:
+        Result := AProperty.GetValue(AInstance).AsVariant;
+      tkClass:
+        begin
+          LObject := AProperty.GetValue(AInstance).AsObject;
+          if LObject <> nil then
+            TJSONBrVariantData(Result).Init(ObjectToJSON(LObject))
+          else
+            Result := Null;
+        end;
+      tkEnumeration:
+        begin
+          if IsBoolean() then
+            Result := AProperty.GetValue(AInstance).AsBoolean
+          else
+            Result := GetEnumValue(LTypeInfo, AProperty.GetValue(AInstance).AsString) >= 0;
+        end;
+      tkDynArray:
+        // Fazer tratamento em base64 para devolver o valor
+        if IsBlob(AProperty.PropertyType.Handle) then
           Result := Null;
-      end;
-    tkEnumeration:
-      begin
-        if IsBoolean() then
-          Result := AProperty.GetValue(AInstance).AsBoolean
-        else
-          Result := GetEnumValue(LTypeInfo, AProperty.GetValue(AInstance).AsString) >= 0;
-      end;
-    tkDynArray:
-      // Fazer tratamento em base64 para devolver o valor
-      if IsBlob(AProperty.PropertyType.Handle) then
-        Result := Null;
+    end;
+  except
+    on E: Exception do
+      raise Exception.Create('Erro no GetValue() da propriedade [' + AProperty.Name + ']' + sLineBreak + E.Message);
   end;
 end;
 
 class procedure TJSONBrObject.SetInstanceProp(const AInstance: TObject; const AProperty:
       TRttiProperty; const AValue: Variant);
 var
+  LBreak: Boolean;
   LTypeInfo: PTypeInfo;
   LObject: TObject;
 
@@ -467,47 +523,57 @@ begin
   begin
     // Notify Event
     if Assigned(FNotifyEventSetValue) then
-      FNotifyEventSetValue(AInstance, AProperty, AValue);
+    begin
+      LBreak := False;
+      FNotifyEventSetValue(AInstance, AProperty, AValue, LBreak);
+      if LBreak then
+        Exit;
+    end;
 
     LTypeInfo := AProperty.PropertyType.Handle;
-    case AProperty.PropertyType.TypeKind of
-      tkString, tkWString, tkUString, tkWChar, tkLString, tkChar:
-        if TVarData(AValue).VType <= varNull then
-          AProperty.SetValue(AInstance, '')
-        else
-          AProperty.SetValue(AInstance, String(AValue));
-      tkInteger, tkSet, tkInt64:
-        AProperty.SetValue(AInstance, Integer(AValue));
-      tkFloat:
-        if TVarData(AValue).VType <= varNull then
-          AProperty.SetValue(AInstance, 0)
-        else
-        if (LTypeInfo = TypeInfo(TDateTime)) or
-           (LTypeInfo = TypeInfo(TDate)) or
-           (LTypeInfo = TypeInfo(TTime)) then
-          AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue))
-        else
-          AProperty.SetValue(AInstance, Double(AValue));
-      tkVariant:
-        AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
-      tkRecord:
-        AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
-      tkClass:
-        begin
-          LObject := AProperty.GetValue(AInstance).AsObject;
-          if LObject <> nil then
-            JSONVariantData(AValue).ToObject(LObject);
-        end;
-      tkEnumeration:
-        begin
-          if IsBoolean() then
-            AProperty.SetValue(AInstance, Boolean(AValue))
+    try
+      case AProperty.PropertyType.TypeKind of
+        tkString, tkWString, tkUString, tkWChar, tkLString, tkChar:
+          if TVarData(AValue).VType <= varNull then
+            AProperty.SetValue(AInstance, '')
           else
-            AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
-        end;
-      tkDynArray:
-        // Fazer tratamento em base64 para devolver o valor
-//        if IsBlob(AProperty.PropertyType.Handle) then
+            AProperty.SetValue(AInstance, String(AValue));
+        tkInteger, tkSet, tkInt64:
+          AProperty.SetValue(AInstance, Integer(AValue));
+        tkFloat:
+          if TVarData(AValue).VType <= varNull then
+            AProperty.SetValue(AInstance, 0)
+          else
+          if (LTypeInfo = TypeInfo(TDateTime)) or
+             (LTypeInfo = TypeInfo(TDate)) or
+             (LTypeInfo = TypeInfo(TTime)) then
+            AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue))
+          else
+            AProperty.SetValue(AInstance, Double(AValue));
+        tkVariant:
+          AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+        tkRecord:
+          AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+        tkClass:
+          begin
+            LObject := AProperty.GetValue(AInstance).AsObject;
+            if LObject <> nil then
+              JSONVariantData(AValue).ToObject(LObject);
+          end;
+        tkEnumeration:
+          begin
+            if IsBoolean() then
+              AProperty.SetValue(AInstance, Boolean(AValue))
+            else
+              AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+          end;
+        tkDynArray:
+          // Fazer tratamento em base64 para devolver o valor
+//          if IsBlob(AProperty.PropertyType.Handle) then
+      end;
+    except
+      on E: Exception do
+        raise Exception.Create('Erro no SetValue() da propriedade [' + AProperty.Name + ']' + sLineBreak + E.Message);
     end;
   end;
 end;

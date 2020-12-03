@@ -30,6 +30,8 @@ uses
   jsonbr.builders;
 
 type
+  TJSONBrObject = jsonbr.builders.TJSONBrObject;
+
   TJSONBr = class
   private
     class var
@@ -51,7 +53,10 @@ type
       const AJson: string): Boolean; overload;
     class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>;
     class procedure JsonToObject(const AJson: string; AObject: TObject); overload;
-
+    //
+    class function BeginObject(const AValue: String = ''): TJSONBrObject;
+    class function BeginArray: TJSONBrObject;
+    // Events GetValue and SetValue
     class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
     class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
   end;
@@ -59,6 +64,16 @@ type
 implementation
 
 { TJSONBr }
+
+class function TJSONBr.BeginArray: TJSONBrObject;
+begin
+  Result := FJSONObject.BeginArray;
+end;
+
+class function TJSONBr.BeginObject(const AValue: String): TJSONBrObject;
+begin
+  Result := FJSONObject.BeginObject(AValue);
+end;
 
 class constructor TJSONBr.Create;
 begin

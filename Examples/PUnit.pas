@@ -107,6 +107,7 @@ begin
     TJSONBr.OnSetValue := nil; // Criando seu proprio tratamento
     TJSONBr.OnGetValue := nil; // Criando seu proprio tratamento
     Memo1.Lines.Text := TJSONBr.ObjectToJsonString(Person);
+
   finally
     Person.Free;
   end;

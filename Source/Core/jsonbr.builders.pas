@@ -39,14 +39,14 @@ uses
 type
   TJSONBrObject = class;
 
-  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject; 
-                                   const AInstance: TObject; 
-								   const AProperty: TRttiProperty; 
-								   var AResult: Variant; 
+  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject;
+                                   const AInstance: TObject;
+								   const AProperty: TRttiProperty;
+								   var AResult: Variant;
 								   var ABreak: Boolean) of Object;
-  TNotifyEventSetValue = procedure(const AInstance: TObject; 
-                                   const AProperty: TRttiProperty; 
-								   const AValue: Variant; 
+  TNotifyEventSetValue = procedure(const AInstance: TObject;
+                                   const AProperty: TRttiProperty;
+								   const AValue: Variant;
 								   var ABreak: Boolean) of Object;
 //  TJSONBrOption = (joIgnoreEmptyStrings,
 //                   joIgnoreEmptyArrays,
@@ -63,7 +63,8 @@ type
   TVariantDynamicArray = array of Variant;
 
   TJSONBrVariantKind = (vkUndefined, vkObject, vkArray);
-  TJSONBrParserKind = (pkNone, pkNull, pkFalse, pkTrue, pkString, pkInteger, pkFloat, pkObject, pkArray);
+  TJSONBrParserKind = (pkNone, pkNull, pkFalse, pkTrue, pkString,
+                       pkInteger, pkFloat, pkObject, pkArray);
 
   PropWrap = packed record
     FillBytes: array [0..SizeOf(Pointer)-2] of Byte;
@@ -85,6 +86,26 @@ type
     function GetItem(AIndex: Integer): Variant;
     procedure SetItem(AIndex: Integer; const AItem: Variant);
     function GetListType(LRttiType: TRttiType): TRttiType;
+    type
+      TJSONBrParser = record
+      private
+        FJson: String;
+        FIndex: Integer;
+        FJsonLength: Integer;
+        procedure Init(const AJson: String; AIndex: Integer);
+        function GetNextChar: Char; inline;
+        function GetNextNonWhiteChar: Char; inline;
+        function CheckNextNonWhiteChar(AChar: Char): Boolean; inline;
+        function GetNextString(out AStr: String): Boolean; overload;
+        function GetNextString: String; overload; inline;
+        function GetNextJSON(out AValue: Variant): TJSONBrParserKind;
+        function CheckNextIdent(const AExpectedIdent: string): Boolean;
+        function GetNextAlphaPropName(out AFieldName: string): Boolean;
+        function ParseJSONObject(out AData: TJSONBrVariantData): Boolean;
+        function ParseJSONArray(out AData: TJSONBrVariantData): Boolean;
+        function CopyIndex: Integer;
+        procedure GetNextStringUnEscape(var AStr: string);
+      end;
   public
     FNames: TStringDynamicArray;
     FValues: TVariantDynamicArray;
@@ -105,38 +126,18 @@ type
     property Item[AIndex: Integer]: Variant read GetItem write SetItem;
   end;
 
-  // Used in TJSONBrVariantData.FromJSON()
-  TJSONBrParser = record
-    FJson: String;
-    FIndex: Integer;
-    FJsonLength: Integer;
-    procedure Init(const AJson: String; AIndex: Integer);
-    function GetNextChar: Char; inline;
-    function GetNextNonWhiteChar: Char; inline;
-    function CheckNextNonWhiteChar(AChar: Char): Boolean; inline;
-    function GetNextString(out AStr: String): Boolean; overload;
-    function GetNextString: String; overload; inline;
-    function GetNextJSON(out AValue: Variant): TJSONBrParserKind;
-    function CheckNextIdent(const AExpectedIdent: string): Boolean;
-    function GetNextAlphaPropName(out AFieldName: string): Boolean;
-    function ParseJSONObject(out AData: TJSONBrVariantData): Boolean;
-    function ParseJSONArray(out AData: TJSONBrVariantData): Boolean;
-    function CopyIndex: Integer;
-    procedure GetNextStringUnEscape(var AStr: string);
-  end;
-
   TJSONVariant = class(TInvokeableVariantType)
   public
     procedure Copy(var ADest: TVarData; const ASource: TVarData;
       const AIndirect: Boolean); override;
     procedure Clear(var AVarData: TVarData); override;
-    function GetProperty(var ADest: TVarData; const AVarData: TVarData;
-      const AName: String): Boolean; override;
-    function SetProperty(const AVarData: TVarData; const AName: String;
-      const AValue: TVarData): Boolean; override;
-    procedure Cast(var ADest: TVarData; const ASource: TVarData); override;
-    procedure CastTo(var ADest: TVarData; const ASource: TVarData;
-      const AVarType: TVarType); override;
+//    function GetProperty(var ADest: TVarData; const AVarData: TVarData;
+//      const AName: String): Boolean; override;
+//    function SetProperty(const AVarData: TVarData; const AName: String;
+//      const AValue: TVarData): Boolean; override;
+//    procedure Cast(var ADest: TVarData; const ASource: TVarData); override;
+//    procedure CastTo(var ADest: TVarData; const ASource: TVarData;
+//      const AVarType: TVarType); override;
   end;
 
   TJSONBrObject = class
@@ -145,44 +146,30 @@ type
     FNotifyEventSetValue: TNotifyEventSetValue;
     FNotifyEventGetValue: TNotifyEventGetValue;
   private
-    FJSON: String;
-    function JSONVariant(const AJson: String): Variant; overload;
-    function JSONVariant(const AValues: TVariantDynamicArray): Variant; overload;
     function GetInstanceProp(AInstance: TObject; AProperty: TRttiProperty): Variant;
     class procedure SetInstanceProp(const AInstance: TObject; const AProperty:
       TRttiProperty; const AValue: Variant);
     class function IsBlob(const ATypeInfo: PTypeInfo): Boolean;
     class function JSONVariantData(const JSONVariant: Variant): TJSONBrVariantData;
-    class function StringToJSON(const AText: string): string;
-    class function ValueToJSON(const AValue: Variant): string;
-    class function DateTimeToJSON(AValue: TDateTime): string;
-    class procedure DoubleToJSON(AValue: Double; out AResult: string);
     class procedure AppendChar(var AStr: string; AChr: char);
     class function DateTimeToIso8601(const AValue: TDateTime): string; static;
     class function Iso8601ToDateTime(const AValue: string): TDateTime;
   public
     function ObjectToJSON(AObject: TObject; AStoreClassName: Boolean = False): String;
+    function JSONVariant(const AValues: TVariantDynamicArray): Variant; overload;
+    function JSONVariant(const AJson: String): Variant; overload;
     function JSONToObject(AObject: TObject; const AJson: String): Boolean; overload;
     function JSONToObject<T: class, constructor>(const AJson: String): T; overload;
     function JSONToObjectList<T: class, constructor>(const AJson: String): TObjectList<T>;
 
-    function BeginObject(const AValue: String = ''): TJSONBrObject;
-    function BeginArray: TJSONBrObject;
-    function EndObject: TJSONBrObject;
-    function EndArray: TJSONBrObject;
-    function AddPair(const APair: String; const AValue: String): TJSONBrObject; overload;
-    function AddPair(const APair: String; const AValue: Integer): TJSONBrObject; overload;
-    function AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject; overload;
-    function AddPairArray(const APair: String; const AValue: array of string): TJSONBrObject; overload;
-    function AddPairArray(const APair: String; const AValue: array of Integer): TJSONBrObject; overload;
-    function ToJSON: String;
-
+    class function StringToJSON(const AText: string): string;
+    class function ValueToJSON(const AValue: Variant): string;
     class property OnSetValue: TNotifyEventSetValue read FNotifyEventSetValue write FNotifyEventSetValue;
     class property OnGetValue: TNotifyEventGetValue read FNotifyEventGetValue write FNotifyEventGetValue;
   end;
 
 var
-  JSONVariantType: TJSONVariant;
+  JSONVariantType: TInvokeableVariantType;
   FSettingsUS: TFormatSettings;
 
 implementation
@@ -218,74 +205,9 @@ begin
   end;
 end;
 
-function TJSONBrObject.BeginArray: TJSONBrObject;
-begin
-  Result := Self;
-  FJSON := FJSON + '[';
-end;
-
-function TJSONBrObject.BeginObject(const AValue: String): TJSONBrObject;
-begin
-  Result := Self;
-  if Length(AValue) > 0 then
-    FJSON := FJSON + StringToJSON(AValue) + ':{'
-  else
-    FJSON := FJSON + '{';
-end;
-
-function TJSONBrObject.AddPair(const APair: String; const AValue: String): TJSONBrObject;
-begin
-  Result := Self;
-  FJSON := FJSON + StringToJSON(APair) + ':' + ValueToJSON(AValue) + ',';
-end;
-
-function TJSONBrObject.AddPairArray(const APair: String; const AValue: array of string): TJSONBrObject;
-var
-  LFor: Integer;
-begin
-  Result := Self;
-  FJSON := FJSON + StringToJSON(APair) + ':[';
-  for LFor := Low(AValue) to High(AValue) do
-    FJSON := FJSON + ValueToJSON(AValue[LFor]) + ',';
-  FJSON[Length(FJSON)] := ']';
-  FJSON := FJSON + ',';
-end;
-
-function TJSONBrObject.AddPairArray(const APair: String; const AValue: array of Integer): TJSONBrObject;
-var
-  LFor: Integer;
-begin
-  Result := Self;
-  FJSON := FJSON + StringToJSON(APair) + ':[';
-  for LFor := Low(AValue) to High(AValue) do
-    FJSON := FJSON + ValueToJSON(AValue[LFor]) + ',';
-  FJSON[Length(FJSON)] := ']';
-  FJSON := FJSON + ',';
-end;
-
-function TJSONBrObject.AddPair(const APair: String; const AValue: TJSONBrObject): TJSONBrObject;
-begin
-  Result := Self;
-  FJSON := FJSON + StringToJSON(APair) + ':' + AValue.ToJSON;
-end;
-
-function TJSONBrObject.AddPair(const APair: String; const AValue: Integer): TJSONBrObject;
-begin
-  Result := Self;
-  FJSON := FJSON + StringToJSON(APair) + ':' + ValueToJSON(AValue) + ',';
-end;
-
 class procedure TJSONBrObject.AppendChar(var AStr: String; AChr: Char);
 begin
   AStr := AStr + String(AChr);
-end;
-
-function TJSONBrObject.ToJSON: String;
-begin
-  if FJSON[Length(FJSON)] = ',' then
-    FJSON[Length(FJSON)] := ' ';
-  Result := TrimRight(FJSON);
-  FJSON := '';
 end;
 
 class function TJSONBrObject.StringToJSON(const AText: String): String;
@@ -330,43 +252,6 @@ begin
   Result := AnsiQuotedStr(AText, '"');
 end;
 
-class procedure TJSONBrObject.DoubleToJSON(AValue: Double;
-  out AResult: string);
-begin
-  AResult := FloatToStr(AValue, FSettingsUS);
-end;
-
-function TJSONBrObject.EndArray: TJSONBrObject;
-begin
-  Result := Self;
-  if FJSON[Length(FJSON)] = ',' then
-    FJSON[Length(FJSON)] := ']'
-  else
-    FJSON := FJSON + ']';
-end;
-
-function TJSONBrObject.EndObject: TJSONBrObject;
-begin
-  Result := Self;
-  // Tratamento para objeto vazio
-  if Length(FJSON) = 1 then
-  begin
-    if FJSON[Length(FJSON)] = '{' then
-    begin
-      FJSON := '{}';
-      Exit;
-    end;
-  end;
-  FJSON[Length(FJSON)] := '}';
-  FJSON := FJSON + ',';
-end;
-
-// "YYYY-MM-DD" "Thh:mm:ss" or "YYYY-MM-DDThh:mm:ss"
-class function TJSONBrObject.DateTimeToJSON(AValue: TDateTime): String;
-begin
-  Result := AnsiQuotedStr(DateTimeToIso8601(AValue), '"');
-end;
-
 class function TJSONBrObject.ValueToJSON(const AValue: Variant): String;
 var
   LInt64: Int64;
@@ -389,7 +274,7 @@ begin
             Result := 'false';
         end;
       varDate:
-        Result := DateTimeToJSON(TVarData(AValue).VDouble);
+        Result := AnsiQuotedStr(DateTimeToIso8601(TVarData(AValue).VDouble), '"');
     else
       if VarIsOrdinal(AValue) then
       begin
@@ -400,7 +285,7 @@ begin
       if VarIsFloat(AValue) then
       begin
         LDouble := AValue;
-        DoubleToJSON(LDouble, Result)
+        Result := FloatToStr(LDouble, FSettingsUS)
       end
       else
       if VarIsStr(AValue) then
@@ -417,6 +302,7 @@ var
   LObject: TObject;
   LTypeInfo: PTypeInfo;
   LBreak: Boolean;
+  LArrayValue: TValue;
 
   function IsBoolean: Boolean;
   var
@@ -489,10 +375,11 @@ begin
           else
             Result := GetEnumValue(LTypeInfo, AProperty.GetValue(AInstance).AsString) >= 0;
         end;
-      tkDynArray:
-        // Fazer tratamento em base64 para devolver o valor
-        if IsBlob(AProperty.PropertyType.Handle) then
-          Result := Null;
+//      tkDynArray:
+//        begin
+//          if IsBlob(LTypeInfo) then
+//            Result := Null;
+//        end;
     end;
   except
     on E: Exception do
@@ -507,6 +394,10 @@ var
   LTypeInfo: PTypeInfo;
   LObject: TObject;
 
+  LArrayLength: NativeInt;
+  LArrayValue: TValue;
+  LDynArr: TRttiDynamicArrayType;
+
   function IsBoolean: Boolean;
   var
     LTypeName: string;
@@ -514,11 +405,6 @@ var
     LTypeName := AProperty.PropertyType.Handle.NameFld.ToString;
     Result := SameText(LTypeName, 'boolean') or SameText(LTypeName, 'bool');
   end;
-
-//  function GetArrayValue(const AValue: Variant): TStringDynArray;
-//  begin
-//    Result :=
-//  end;
 
 begin
   if (AProperty = nil) and (AInstance = nil) then
@@ -569,13 +455,14 @@ begin
           else
             AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
         end;
-      tkDynArray:
+//      tkDynArray:
 //        begin
-//
-//          AProperty.SetValue(AInstance,  ['GET','SET']);
+//          LArrayValue := TValue.FromArray(LTypeInfo, TValue.From<String>(AValue));
+//          LArrayLength := LArrayValue.GetArrayLength;
+//          DynArraySetLength(PPointer(LArrayValue.GetReferenceToRawData)^, LArrayValue.TypeInfo, 1, @LArrayLength);
+//          AProperty.SetValue(AInstance, LArrayValue);
+////        if IsBlob(LTypeInfo) then
 //        end;
-        // Fazer tratamento em base64 para devolver o valor
-//          if IsBlob(AProperty.PropertyType.Handle) then
     end;
   except
     on E: Exception do
@@ -814,14 +701,14 @@ end;
 
 { TJSONBrParser }
 
-procedure TJSONBrParser.Init(const AJson: String; AIndex: Integer);
+procedure TJSONBrVariantData.TJSONBrParser.Init(const AJson: String; AIndex: Integer);
 begin
   FJson := AJson;
   FJsonLength := Length(FJson);
   FIndex := AIndex;
 end;
 
-function TJSONBrParser.GetNextChar: Char;
+function TJSONBrVariantData.TJSONBrParser.GetNextChar: Char;
 begin
   Result := #0;
   if FIndex <= FJsonLength then
@@ -831,7 +718,7 @@ begin
   end;
 end;
 
-function TJSONBrParser.GetNextNonWhiteChar: Char;
+function TJSONBrVariantData.TJSONBrParser.GetNextNonWhiteChar: Char;
 begin
   Result := #0;
   if FIndex <= FJsonLength then
@@ -848,7 +735,7 @@ begin
   end;
 end;
 
-function TJSONBrParser.CheckNextNonWhiteChar(AChar: Char): Boolean;
+function TJSONBrVariantData.TJSONBrParser.CheckNextNonWhiteChar(AChar: Char): Boolean;
 begin
   Result := False;
   if FIndex <= FJsonLength then
@@ -866,16 +753,12 @@ begin
   end;
 end;
 
-function TJSONBrParser.CopyIndex: Integer;
+function TJSONBrVariantData.TJSONBrParser.CopyIndex: Integer;
 begin
-  {$IFDEF NEXTGEN}
-  Result := FIndex +1;
-  {$ELSE}
-  Result := FIndex;
-  {$ENDIF}
+  Result := {$IFDEF NEXTGEN}FIndex +1{$ELSE}FIndex{$ENDIF};
 end;
 
-procedure TJSONBrParser.GetNextStringUnEscape(var AStr: String);
+procedure TJSONBrVariantData.TJSONBrParser.GetNextStringUnEscape(var AStr: String);
 var
   LChar: Char;
   LCopy: String;
@@ -916,7 +799,7 @@ begin
   until False;
 end;
 
-function TJSONBrParser.GetNextString(out AStr: String): Boolean;
+function TJSONBrVariantData.TJSONBrParser.GetNextString(out AStr: String): Boolean;
 var
   LFor: Integer;
 begin
@@ -941,13 +824,13 @@ begin
   end;
 end;
 
-function TJSONBrParser.GetNextString: String;
+function TJSONBrVariantData.TJSONBrParser.GetNextString: String;
 begin
   if not GetNextString(Result) then
     Result := '';
 end;
 
-function TJSONBrParser.GetNextAlphaPropName(out AFieldName: String): Boolean;
+function TJSONBrVariantData.TJSONBrParser.GetNextAlphaPropName(out AFieldName: String): Boolean;
 var
   LFor: Integer;
 begin
@@ -981,7 +864,7 @@ begin
     end;
 end;
 
-function TJSONBrParser.GetNextJSON(out AValue: Variant): TJSONBrParserKind;
+function TJSONBrVariantData.TJSONBrParser.GetNextJSON(out AValue: Variant): TJSONBrParserKind;
 var
   LStr: String;
   LInt64: Int64;
@@ -1046,14 +929,14 @@ begin
   end;
 end;
 
-function TJSONBrParser.CheckNextIdent(const AExpectedIdent: String): Boolean;
+function TJSONBrVariantData.TJSONBrParser.CheckNextIdent(const AExpectedIdent: String): Boolean;
 begin
   Result := (GetNextNonWhiteChar = '"') and
             (CompareText(GetNextString, AExpectedIdent) = 0) and
             (GetNextNonWhiteChar = ':');
 end;
 
-function TJSONBrParser.ParseJSONArray(out AData: TJSONBrVariantData): Boolean;
+function TJSONBrVariantData.TJSONBrParser.ParseJSONArray(out AData: TJSONBrVariantData): Boolean;
 var
   LItem: Variant;
 begin
@@ -1078,7 +961,7 @@ begin
   Result := True;
 end;
 
-function TJSONBrParser.ParseJSONObject(out AData: TJSONBrVariantData): Boolean;
+function TJSONBrVariantData.TJSONBrParser.ParseJSONObject(out AData: TJSONBrVariantData): Boolean;
 var
   LKey: String;
   LItem: Variant;
@@ -1217,8 +1100,7 @@ var
   LFor: Cardinal;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and
-    (FVKind = vkObject) then
+  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkObject) then
   begin
     LFor := Cardinal(NameIndex(AName));
     if LFor < Cardinal(Length(FValues)) then
@@ -1229,16 +1111,14 @@ end;
 function TJSONBrVariantData.GetItem(AIndex: Integer): Variant;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkArray)
-    then
+  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkArray) then
     if Cardinal(AIndex) < Cardinal(FVCount) then
       Result := FValues[AIndex];
 end;
 
 procedure TJSONBrVariantData.SetItem(AIndex: Integer; const AItem: Variant);
 begin
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkArray)
-    then
+  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkArray) then
     if Cardinal(AIndex) < Cardinal(FVCount) then
       FValues[AIndex] := AItem;
 end;
@@ -1430,18 +1310,18 @@ end;
 
 { TJSONVariant }
 
-procedure TJSONVariant.Cast(var ADest: TVarData; const ASource: TVarData);
-begin
-  CastTo(ADest, ASource, VarType);
-end;
-
-procedure TJSONVariant.CastTo(var ADest: TVarData; const ASource: TVarData;
-  const AVarType: TVarType);
-begin
-  if ASource.VType <> VarType then
-    RaiseCastError;
-  Variant(ADest) := TJSONBrVariantData(ASource).ToJSON;
-end;
+//procedure TJSONVariant.Cast(var ADest: TVarData; const ASource: TVarData);
+//begin
+//  CastTo(ADest, ASource, VarType);
+//end;
+//
+//procedure TJSONVariant.CastTo(var ADest: TVarData; const ASource: TVarData;
+//  const AVarType: TVarType);
+//begin
+//  if ASource.VType <> VarType then
+//    RaiseCastError;
+//  Variant(ADest) := TJSONBrVariantData(ASource).ToJSON;
+//end;
 
 procedure TJSONVariant.Clear(var AVarData: TVarData);
 begin
@@ -1463,20 +1343,20 @@ begin
   end;
 end;
 
-function TJSONVariant.GetProperty(var ADest: TVarData; const AVarData: TVarData;
-  const AName: String): Boolean;
-begin
-  if not TJSONBrVariantData(AVarData).GetVarData(AName, ADest) then
-    ADest.VType := varNull;
-  Result := True;
-end;
-
-function TJSONVariant.SetProperty(const AVarData: TVarData; const AName: String;
-  const AValue: TVarData): Boolean;
-begin
-  TJSONBrVariantData(AVarData).SetValue(AName, Variant(AValue));
-  Result := True;
-end;
+//function TJSONVariant.GetProperty(var ADest: TVarData; const AVarData: TVarData;
+//  const AName: String): Boolean;
+//begin
+//  if not TJSONBrVariantData(AVarData).GetVarData(AName, ADest) then
+//    ADest.VType := varNull;
+//  Result := True;
+//end;
+//
+//function TJSONVariant.SetProperty(const AVarData: TVarData; const AName: String;
+//  const AValue: TVarData): Boolean;
+//begin
+//  TJSONBrVariantData(AVarData).SetValue(AName, Variant(AValue));
+//  Result := True;
+//end;
 
 initialization
   JSONVariantType := TJSONVariant.Create;

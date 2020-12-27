@@ -10,10 +10,10 @@ uses
 type
   TGlossDefDTO = class
   private
-//    FGlossSeeAlso: TArray<string>;
+    FGlossSeeAlso: TArray<String>;
     FPara: string;
   published
-//    property GlossSeeAlso: TArray<string> read FGlossSeeAlso write FGlossSeeAlso;
+    property GlossSeeAlso: TArray<String> read FGlossSeeAlso write FGlossSeeAlso;
     property Para: string read FPara write FPara;
   end;
 

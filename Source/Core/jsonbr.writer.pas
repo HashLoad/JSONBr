@@ -15,7 +15,7 @@
        arquivo LICENSE na pasta principal.
 }
 
-{ @abstract(JSONBr Framework.)
+{ @abstract(JSONBr Framework)
   @created(23 Nov 2020)
   @author(Isaque Pinheiro <isaquepsp@gmail.com>)
   @author(Telegram : @IsaquePinheiro)

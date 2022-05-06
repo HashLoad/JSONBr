@@ -165,7 +165,8 @@ type
     class var FSettingsUS: TFormatSettings;
     function ObjectToJSON(const AObject: TObject; const AStoreClassName: Boolean = False): String;
     function DynArrayStringToJSON(const AValue: TValue): String;
-    function DynArrayNumberToJSON(const AValue: TValue): String;
+    function DynArrayIntegerToJSON(const AValue: TValue): String;
+    function DynArrayDoubleToJSON(const AValue: TValue): String;
     function JSONVariant(const AValues: TVariantDynamicArray): Variant; overload;
     function JSONVariant(const AJson: String): Variant; overload;
     function JSONToObject(AObject: TObject; const AJson: String): Boolean; overload;
@@ -251,6 +252,9 @@ var
 begin
   LLen := Length(AText);
   for LFor := 1 to LLen do
+//    case AText[Lfor] of
+//     '[', ']': continue;
+//    end;
     case AText[LFor] of
       #0 .. #31, '\', '"':
       begin
@@ -298,7 +302,7 @@ begin
       end
       else
       if VarIsStr(AValue) then
-        Result := StringToJSON(VarToStr(AValue))
+        Result :=  StringToJSON(VarToStr(AValue))
       else
         Result := VarToStr(AValue);
     end;
@@ -395,7 +399,10 @@ begin
             if EndsText('<System.String>', LTypeInfo.Name) then
               Result := DynArrayStringToJSON(AProperty.GetValue(AInstance))
             else
-              Result := DynArrayNumberToJSON(AProperty.GetValue(AInstance));
+            if EndsText('<System.Integer>', LTypeInfo.Name) then
+              Result := DynArrayIntegerToJSON(AProperty.GetValue(AInstance))
+            else
+              Result := DynArrayDoubleToJSON(AProperty.GetValue(AInstance))
           end;
         end;
     end;
@@ -421,6 +428,7 @@ begin
   LValue := ReplaceStr(LValue, '[', '');
   LValue := ReplaceStr(LValue, ']', '');
   LValue := ReplaceStr(LValue, '"', '');
+//  LValue := ReplaceStr(LValue, '\', '');
   if EndsText('<System.String>', ATypeInfo.Name) then
     Result := TValue.From<TArray<String>>(ResolveValueArrayString(LValue))
   else
@@ -529,14 +537,32 @@ begin
     Result := FormatDateTime('yyyy"-"mm"-"dd"T"hh":"nn":"ss', AValue);
 end;
 
-function TJSONBrObject.DynArrayNumberToJSON(const AValue: TValue): String;
+function TJSONBrObject.DynArrayDoubleToJSON(const AValue: TValue): String;
 var
   LFor: Integer;
+  LValue: Double;
 begin
   Result := '[';
   for LFor := 0 to AValue.GetArrayLength -1 do
   begin
-    Result := Result + AValue.GetArrayElement(LFor).AsString;
+    LValue := AValue.GetArrayElement(LFor).AsExtended;
+    Result := Result + LValue.ToString;
+    if LFor < AValue.GetArrayLength - 1 then
+      Result := Result + ', ';
+  end;
+  Result := Result + ']';
+end;
+
+function TJSONBrObject.DynArrayIntegerToJSON(const AValue: TValue): String;
+var
+  LFor: Integer;
+  LValue: Integer;
+begin
+  Result := '[';
+  for LFor := 0 to AValue.GetArrayLength -1 do
+  begin
+    LValue := AValue.GetArrayElement(LFor).AsInteger;
+    Result := Result + LValue.ToString;
     if LFor < AValue.GetArrayLength - 1 then
       Result := Result + ', ';
   end;
@@ -550,7 +576,8 @@ begin
   Result := '[';
   for LFor := 0 to AValue.GetArrayLength -1 do
   begin
-    Result := Result + '\"' + AValue.GetArrayElement(LFor).AsString + '\"';
+//    Result := Result + '\"' + AValue.GetArrayElement(LFor).AsString + '\"';
+    Result := Result + '"' + AValue.GetArrayElement(LFor).AsString + '"';
     if LFor < AValue.GetArrayLength -1 then
       Result := Result + ', ';
   end;
@@ -766,8 +793,14 @@ begin
   for LProperty in LTypeInfo.GetProperties do
   begin
     if LProperty.IsWritable then
-      Result := Result + StringToJSON(LProperty.Name) + ':' +
-                         ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
+    begin
+      if StartsText('TArray<', LProperty.PropertyType.Name) then
+        Result := Result + StringToJSON(LProperty.Name) + ':' +
+                           GetInstanceProp(AObject, LProperty) + ','
+      else
+        Result := Result + StringToJSON(LProperty.Name) + ':' +
+                           ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
+    end;
   end;
   Result[Length(Result)] := '}';
 end;

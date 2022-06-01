@@ -1,4 +1,4 @@
-program JSONBr_Tests;
+program TestJSON;
 
 {$IFNDEF TESTINSIGHT}
 {$APPTYPE CONSOLE}
@@ -13,10 +13,11 @@ uses
   DUnitX.Loggers.Xml.NUnit,
   {$ENDIF }
   DUnitX.TestFramework,
-  UnitTests in 'UnitTests.pas',
+  Test.JSON in 'Test.JSON.pas',
+  Test.Consts in 'Test.Consts.pas',
   jsonbr.builders in '..\Source\Core\jsonbr.builders.pas',
-  jsonbr in '..\Source\Core\jsonbr.pas',
-  jsonbr.writer in '..\Source\Core\jsonbr.writer.pas';
+  Test.Model in 'Test.Model.pas',
+  jsonbr in '..\Source\Core\jsonbr.pas';
 
 {$IFNDEF TESTINSIGHT}
 var
@@ -26,7 +27,6 @@ var
   nunitLogger : ITestLogger;
 {$ENDIF}
 begin
-  ReportMemoryLeaksOnShutdown := DebugHook <> 0;
 {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX.RunRegisteredTests;
 {$ELSE}
@@ -42,10 +42,9 @@ begin
 
     //tell the runner how we will log things
     //Log to the console window if desired
-    TDUnitX.Options.ConsoleMode := TDunitXConsoleMode.Quiet;
     if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
     begin
-      logger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
+      logger := TDUnitXConsoleLogger.Create(True {TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet});
       runner.AddLogger(logger);
     end;
     //Generate an NUnit compatible XML File

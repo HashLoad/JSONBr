@@ -27,15 +27,14 @@ interface
 
 uses
   Generics.Collections,
+  jsonbr.writer,
   jsonbr.builders;
 
 type
-  TJSONBrObject = jsonbr.builders.TJSONBrObject;
-
   TJSONBr = class
   private
-    class var
-    FJSONObject: TJSONBrObject;
+    class var FJSONObject: TJSONBrObject;
+    class var FJSONWriter: TJSONWriter;
     class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static;
     class procedure SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static;
   public
@@ -54,8 +53,8 @@ type
     class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>;
     class procedure JsonToObject(const AJson: string; AObject: TObject); overload;
     //
-    class function BeginObject(const AValue: String = ''): TJSONBrObject;
-    class function BeginArray: TJSONBrObject;
+    class function BeginObject(const AValue: String = ''): TJSONWriter;
+    class function BeginArray: TJSONWriter;
     // Events GetValue and SetValue
     class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
     class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
@@ -65,24 +64,26 @@ implementation
 
 { TJSONBr }
 
-class function TJSONBr.BeginArray: TJSONBrObject;
+class function TJSONBr.BeginArray: TJSONWriter;
 begin
-  Result := FJSONObject.BeginArray;
+  Result := FJSONWriter.BeginArray;
 end;
 
-class function TJSONBr.BeginObject(const AValue: String): TJSONBrObject;
+class function TJSONBr.BeginObject(const AValue: String = ''): TJSONWriter;
 begin
-  Result := FJSONObject.BeginObject(AValue);
+  Result := FJSONWriter.BeginObject(AValue);
 end;
 
 class constructor TJSONBr.Create;
 begin
+  FJSONWriter := TJSONWriter.Create;
   FJSONObject := TJSONBrObject.Create;
 end;
 
 class destructor TJSONBr.Destroy;
 begin
   FJSONObject.Free;
+  FJSONWriter.Free;
   inherited;
 end;
 

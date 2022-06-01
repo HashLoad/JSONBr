@@ -40,8 +40,7 @@ uses
 type
   TJSONBrObject = class;
 
-  TNotifyEventGetValue = procedure(const Sender: TJSONBrObject;
-                                   const AInstance: TObject;
+  TNotifyEventGetValue = procedure(const AInstance: TObject;
 								   const AProperty: TRttiProperty;
 								   var AResult: Variant;
 								   var ABreak: Boolean) of Object;
@@ -332,7 +331,7 @@ begin
   if Assigned(FNotifyEventGetValue) then
   begin
     LBreak := False;
-    FNotifyEventGetValue(Self, AInstance, AProperty, Result, LBreak);
+    FNotifyEventGetValue(AInstance, AProperty, Result, LBreak);
     if LBreak then
       Exit;
   end;

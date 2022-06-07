@@ -33,7 +33,7 @@ type
 
   [Entity]
   [Table('Person','Tabela de pessoas')]
-  [PrimaryKey('Id', NotInc, NoSort, False, 'Chave primária')]
+  [PrimaryKey('Id', NotInc, SequenceInc, NoSort, False, 'Chave primária')]
   [Indexe('IDX_FirstName','FirstName', NoSort, True, 'Indexe por nome')]
   [Check('CHK_Age', 'Age >= 0')]
   TPerson = class

@@ -15,9 +15,12 @@ uses
   DUnitX.TestFramework,
   Test.JSON in 'Test.JSON.pas',
   Test.Consts in 'Test.Consts.pas',
-  jsonbr.builders in '..\Source\Core\jsonbr.builders.pas',
   Test.Model in 'Test.Model.pas',
-  jsonbr in '..\Source\Core\jsonbr.pas';
+  jsonbr.builders in '..\Source\Core\jsonbr.builders.pas',
+  jsonbr in '..\Source\Core\jsonbr.pas',
+  jsonbr.writer in '..\Source\Core\jsonbr.writer.pas',
+  XSuperJSON in 'x-superobject\XSuperJSON.pas',
+  XSuperObject in 'x-superobject\XSuperObject.pas';
 
 {$IFNDEF TESTINSIGHT}
 var
@@ -42,11 +45,11 @@ begin
 
     //tell the runner how we will log things
     //Log to the console window if desired
-    if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
-    begin
-      logger := TDUnitXConsoleLogger.Create(True {TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet});
-      runner.AddLogger(logger);
-    end;
+//    if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
+//    begin
+//      logger := TDUnitXConsoleLogger.Create(True {TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet});
+//      runner.AddLogger(logger);
+//    end;
     //Generate an NUnit compatible XML File
     nunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
     runner.AddLogger(nunitLogger);

@@ -8,7 +8,10 @@ uses
   Generics.Collections,
   Test.Model,
   jsonbr,
-  jsonbr.builders;
+  JSON,
+  REST.Json;
+//  XSuperJSON,
+//  XSuperObject;
 
 procedure SetColorConsole(AColor: TColor);
 procedure GeraObjectList;
@@ -32,8 +35,8 @@ const
                     '					"Abbrev": "ISO 8879:1986",' + #13#10 +
                     '					"GlossDef": {' + #13#10 +
                         '"para": "A meta-markup language, used to create markup languages such as DocBook.",' + #13#10 +
-//                        '						"GlossSeeAlso": ["1.93", "2.85"]' + #13#10 +
-                        '						"GlossSeeAlso": ["GML", "XML"]' + #13#10 +
+                        '						"GlossSeeAlso": ["1.93", "2.85"]' + #13#10 +
+//                        '						"GlossSeeAlso": ["GML", "XML"]' + #13#10 +
                     '},' + #13#10 +
                     '					"GlossSee": "markup"' + #13#10 +
                 '}' + #13#10 +
@@ -49,6 +52,7 @@ var
   FObjectList5000: TObjectList<TRootDTO>;
   FObject: TRootDTO;
   FJsonArray: WideString;
+  FJsonBrArray: WideString;
 
 implementation
 
@@ -73,34 +77,33 @@ var
   LFor: Integer;
 begin
   FObjectList := TObjectList<TRootDTO>.Create;
-  FObjectList.OwnsObjects := True;
   for LFor := 1 to SAMPLE_JSON_1_COUNT do
   begin
-    LObject := TJSONBr.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
+    LObject := REST.Json.TJson.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
     FObjectList.Add(LObject);
   end;
 
   FObjectList5000 := TObjectList<TRootDTO>.Create;
-  FObjectList5000.OwnsObjects := True;
   for LFor := 1 to 5000 do
   begin
-    LObject5000 := TJSONBr.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
+    LObject5000 := REST.Json.TJson.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
     FObjectList5000.Add(LObject5000);
   end;
 end;
 
 procedure GeraObject;
 begin
-  FObject := TJSONBr.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
+  FObject := REST.Json.TJson.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
 end;
 
 procedure GeraJsonArray;
 begin
-  FJsonArray := TJSONBr.ObjectListToJsonString<TRootDTO>(FObjectList5000);
+  FJsonArray := REST.Json.TJson.ObjectToJsonString(FObjectList5000);
+  FJsonBrArray := TJSONBr.ObjectToJsonString(FObjectList5000);
 end;
 
 initialization
-  System.Writeln('Inicializando variáveis de ambiente para processamento!');
+  System.Writeln('Aguarde!!! Inicializando variáveis de ambiente para processamento!');
   System.Writeln(' ');
   GeraObjectList;
   GeraObject;

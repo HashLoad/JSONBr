@@ -646,7 +646,7 @@ begin
   else
   begin
     Result := TObjectList<T>.Create;
-    Result.OwnsObjects := True;
+    //Result.OwnsObjects := True;
     for LFor := 0 to LDoc.Count - 1 do
     begin
       LItem := T.Create;

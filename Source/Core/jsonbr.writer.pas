@@ -55,7 +55,7 @@ implementation
 
 { TJSONWriter }
 
-function TJSONWriter.AddPair(const APair, AValue: String): TJSONWriter;
+function TJSONWriter.AddPair(const APair: String; const AValue: String): TJSONWriter;
 begin
   Result := Self;
   FJSON := FJSON + FJSONObject.StringToJSON(APair) + ':' + FJSONObject.ValueToJSON(AValue) + ',';

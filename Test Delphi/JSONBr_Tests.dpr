@@ -37,20 +37,14 @@ begin
     runner := TDUnitX.CreateRunner;
     //Tell the runner to use RTTI to find Fixtures
     runner.UseRTTI := True;
-    //When true, Assertions must be made during tests;
-    runner.FailsOnNoAsserts := False;
-
     //tell the runner how we will log things
-    //Log to the console window if desired
-    TDUnitX.Options.ConsoleMode := TDunitXConsoleMode.Quiet;
-    if TDUnitX.Options.ConsoleMode <> TDunitXConsoleMode.Off then
-    begin
-      logger := TDUnitXConsoleLogger.Create(TDUnitX.Options.ConsoleMode = TDunitXConsoleMode.Quiet);
-      runner.AddLogger(logger);
-    end;
+    //Log to the console window
+    logger := TDUnitXConsoleLogger.Create(true);
+    runner.AddLogger(logger);
     //Generate an NUnit compatible XML File
     nunitLogger := TDUnitXXMLNUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile);
     runner.AddLogger(nunitLogger);
+    runner.FailsOnNoAsserts := False; //When true, Assertions must be made during tests;
 
     //Run tests
     results := runner.Execute;

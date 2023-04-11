@@ -1,45 +1,172 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+# JSONBr Framework for Delphi
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+JSON BRASIL é um framework opensource que provê escritas arquivos JSON, de forma funcional e orientada a objeto, além dos recursos de gerar um JSON de um objeto e popular o objeto com base em um arquivo JSON, seu diferencial são os eventos onGetValue() e onSetValue() que dão a dinâmica de tratar seu próprio tipo de campo, alimentado assim o JSON e lendo esse campo dele.
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
+Essa classe estava enraizada ao projeto ORMBr, nela foi feito vários testes em questão de performance, o qual ela se saiu muito bem com as que foi confrontada, visto isso, foi visto a possibilidade de ser um framework independente, que pudesse ser usado até mesmo por outros projetos opensource, mas para isso, o primeiro passo a ser dado seria remover qualquer vínculo com framework ORMBr, então com um pouco de esforço e tempo de dedicação, nasceu o JSONBr.
 
----
+A cereja do bolo desse projeto é a dinâmica que ele oferece para outros projetos tratar seus tipos de campos criados, através dos dois eventos onGetValue e onSetValue, esses eventos quando usados intercepta o dado do evento interno, possibilitando assim, a verificação do tipo e o tratamento do valor do campo e como ele deve ser aplicado na tag no arquivo
 
-## Edit a file
+<p align="center">
+  <a href="https://www.isaquepinheiro.com.br">
+    <img src="https://www.isaquepinheiro.com.br/projetos/jsonbr-framework-for-delphi-opensource-95504.png" width="200" height="200">
+  </a>
+</p>
 
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
+## 🏛 Delphi Versions
+Embarcadero Delphi XE e superior.
 
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+## ⚙️ Instalação
+O JSONBr não precisa ser instalado, basta adicionar as units no path libriry do seu delphi e começar a usa-lo.
 
----
+## ⚡️ Como usar
 
-## Create a file
+```Delphi
+procedure TTestJSONBr.Loop50000;
+var
+  LList: TObjectList<TRootDTO>;
+  LObject: TRootDTO;
+  LFor: Integer;
+  LInit, LEnd: Cardinal;
+begin
+  LList := TObjectList<TRootDTO>.Create;
+  LList.OwnsObjects := True;
+  try
+    LInit := GetTickCount;
+    for LFor := 1 to SAMPLE_JSON_1_COUNT do
+    begin
+      LObject := TJSONBr.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
+      LList.Add(LObject);
+    end;
+    LEnd := GetTickCount;
+    //
+    System.Writeln(Format('..gerando 50.000 objetos de um json object(' + 
+                             cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
+  finally
+    LList.Clear;
+    LList.Free;
+  end;
+end;
+```
 
-Next, you’ll add a new file to this repository.
+```Delphi
+procedure TForm1.Button2Click(Sender: TObject);
+var
+  Person: TPerson;
+  Person1: TpersonSub;
+  Person2: TpersonSub;
+begin
+  Person := TPerson.Create;
+  try
+    Person.Id := 1;
+    Person.FirstName := '';
+    Person.LastName := 'Json';
+    Person.Age := 10;
+    Person.Salary := 100.10;
+    Person.Date := Now;
 
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
+    Person.Pessoa.Id := 2;
+    Person.Pessoa.FirstName := 'Json 2';
+    Person.Pessoa.LastName := 'Parse 2';
+    Person.Pessoa.Age := 20;
+    Person.Pessoa.Salary := 200.20;
+    Person.Imagem := '12345678901234567890';
 
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
+    Person1 := TPersonSub.Create;
+    Person1.Id := 3;
+    Person1.FirstName := 'Json 3';
+    Person1.LastName := 'Parse 3';
+    Person1.Age := 30;
+    Person1.Salary := 300.30;
 
----
+    Person2 := TPersonSub.Create;
+    Person2.Id := 4;
+    Person2.FirstName := 'Json 4';
+    Person2.LastName := 'Parse 4';
+    Person2.Age := 40;
+    Person2.Salary := 400.40;
 
-## Clone a repository
+    Person.Pessoas.Add(Person1);
+    Person.Pessoas.Add(Person2);
 
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
+    TJSONBr.OnSetValue := nil; // Criando seu proprio tratamento de tipos
+    TJSONBr.OnGetValue := nil; // Criando seu proprio tratamento de tipos
+    Memo1.Lines.Text := TJSONBr.ObjectToJsonString(Person);
 
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
+  finally
+    Person.Free;
+  end;
+end;
+```
 
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+```Delphi
+procedure TTestJSONBr.AddPair_1;
+var
+  LResult: String;
+const
+  LJSON = '[{"ID":1,"Name":"Json"},[{"ID":2,"Name":"Json 2"},{"ID":3,"Name":"Json 3"}]]';
+begin
+  LResult := TJSONBr
+               .BeginArray
+                 .BeginObject
+                   .AddPair('ID', 1)
+                   .AddPair('Name', 'Json')
+                 .EndObject
+                 .BeginArray
+                   .BeginObject
+                     .AddPair('ID', 2)
+                     .AddPair('Name', 'Json 2')
+                   .EndObject
+                   .BeginObject
+                     .AddPair('ID', 3)
+                     .AddPair('Name', 'Json 3')
+                   .EndObject
+                 .EndArray
+               .EndArray
+             .ToJSON;
+end;
+```
+
+```Delphi
+procedure TTestJSONBr.AddValue_1;
+var
+  LResult: String;
+const
+  LJSON = '{"nome":"Fulano","idade":90,"filmes_preferidos":["Pulp Fiction","Clube da Luta"],"contatos"
+  :{"telefone":"(11)91111-2222","emails":["fulano@gmail.com","fulano@yahoo.com"]}}';
+begin
+  LResult := TJSONBr
+              .BeginObject
+                .AddPair('nome', 'Fulano')
+                .AddPair('idade', 90)
+                .AddPairArray('filmes_preferidos', ['Pulp Fiction', 'Clube da Luta'])
+                .BeginObject('contatos')
+                  .AddPair('telefone', '(11)91111-2222')
+                  .AddPairArray('emails', ['fulano@gmail.com', 'fulano@yahoo.com'])
+                .EndObject
+              .EndObject
+            .ToJSON;
+end;
+```
+
+## ✍️ License
+[![License](https://img.shields.io/badge/Licence-LGPL--3.0-blue.svg)](https://opensource.org/licenses/LGPL-3.0)
+
+## ⛏️ Contribuição
+
+Nossa equipe adoraria receber contribuições para este projeto open source. Se você tiver alguma ideia ou correção de bug, sinta-se à vontade para abrir uma issue ou enviar uma pull request.
+
+[![Issues](https://img.shields.io/badge/Issues-channel-orange)](https://github.com/HashLoad/ormbr/issues)
+
+Para enviar uma pull request, siga estas etapas:
+
+1. Faça um fork do projeto
+2. Crie uma nova branch (`git checkout -b minha-nova-funcionalidade`)
+3. Faça suas alterações e commit (`git commit -am 'Adicionando nova funcionalidade'`)
+4. Faça push da branch (`git push origin minha-nova-funcionalidade`)
+5. Abra uma pull request
+
+## 📬 Contato
+[![Telegram](https://img.shields.io/badge/Telegram-channel-blue)](https://t.me/hashload)
+
+## 💲 Doação
+[![Doação](https://img.shields.io/badge/PagSeguro-contribua-green)](https://pag.ae/bglQrWD)

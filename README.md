@@ -16,7 +16,10 @@ A cereja do bolo desse projeto é a dinâmica que ele oferece para outros projet
 Embarcadero Delphi XE e superior.
 
 ## ⚙️ Instalação
-O JSONBr não precisa ser instalado, basta adicionar as units no path libriry do seu delphi e começar a usa-lo.
+Instalação usando o [`boss install`]
+```sh
+boss install "https://github.com/HashLoad/cqlbr"
+```
 
 ## ⚡️ Como usar
 

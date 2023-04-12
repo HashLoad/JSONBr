@@ -18,7 +18,7 @@ Embarcadero Delphi XE e superior.
 ## ⚙️ Instalação
 Instalação usando o [`boss install`]
 ```sh
-boss install "https://github.com/HashLoad/cqlbr"
+boss install "https://github.com/HashLoad/jsonbr"
 ```
 
 ## ⚡️ Como usar

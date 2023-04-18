@@ -785,15 +785,15 @@ begin
 
   for LProperty in LTypeInfo.GetProperties do
   begin
-    if LProperty.IsWritable then
-    begin
-      if StartsText('TArray<', LProperty.PropertyType.Name) then
-        Result := Result + StringToJSON(LProperty.Name) + ':' +
-                           GetInstanceProp(AObject, LProperty) + ','
-      else
-        Result := Result + StringToJSON(LProperty.Name) + ':' +
-                           ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
-    end;
+    if (not LProperty.IsWritable) then
+      Continue;
+
+    if StartsText('TArray<', LProperty.PropertyType.Name) then
+      Result := Result + StringToJSON(LProperty.Name) + ':' +
+                         GetInstanceProp(AObject, LProperty) + ','
+    else
+      Result := Result + StringToJSON(LProperty.Name) + ':' +
+                         ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
   end;
   Result[Length(Result)] := '}';
 end;

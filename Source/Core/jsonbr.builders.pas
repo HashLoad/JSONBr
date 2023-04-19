@@ -35,7 +35,8 @@ uses
   Variants,
   TypInfo,
   Types,
-  Generics.Collections;
+  Generics.Collections,
+  jsonbr.utils;
 
 type
   TJSONBrObject = class;
@@ -150,10 +151,9 @@ type
     class function GetValueArray(const ATypeInfo: PTypeInfo; const AValue: Variant): TValue;
     class function JSONVariantData(const AValue: Variant): TJSONBrVariantData;
     class procedure AppendChar(var AStr: string; AChr: char);
-//    class function DateTimeToIso8601(const AValue: TDateTime): string; static;
-    class function Iso8601ToDateTime(const AValue: string): TDateTime;
   public
-    class var FormatSettings: TFormatSettings;
+//    class var FormatSettings: TFormatSettings;
+    class var UseISO8601DateFormat: Boolean;
     function ObjectToJSON(const AObject: TObject; const AStoreClassName: Boolean = False): String;
     function DynArrayStringToJSON(const AValue: TValue): String;
     function DynArrayIntegerToJSON(const AValue: TValue): String;
@@ -278,8 +278,7 @@ begin
             Result := 'false';
         end;
       varDate:
-        Result := AnsiQuotedStr(DateTimeToStr(TVarData(AValue).VDouble, FormatSettings), '"');
-//        Result := AnsiQuotedStr(DateTimeToIso8601(TVarData(AValue).VDouble), '"');
+        Result := AnsiQuotedStr(DateTimeToIso8601(TVarData(AValue).VDouble, UseISO8601DateFormat), '"');
     else
       if VarIsOrdinal(AValue) then
       begin
@@ -290,7 +289,7 @@ begin
       if VarIsFloat(AValue) then
       begin
         LDouble := AValue;
-        Result := FloatToStr(LDouble, TJSONBrObject.FormatSettings)
+        Result := FloatToStr(LDouble, JsonBrFormatSettings)
       end
       else
       if VarIsStr(AValue) then
@@ -342,7 +341,7 @@ begin
         case GetTypeData(LTypeInfo)^.FloatType of
           ftSingle:
             begin
-              Result := StrToFloat(AProperty.GetValue(AInstance).AsString, TJSONBrObject.FormatSettings);
+              Result := StrToFloat(AProperty.GetValue(AInstance).AsString, JsonBrFormatSettings);
             end;
           ftDouble:
             begin
@@ -350,8 +349,7 @@ begin
                  (LTypeInfo = TypeInfo(TDate))     or
                  (LTypeInfo = TypeInfo(TTime))     then
               begin
-                Result := DateTimeToStr(AProperty.GetValue(AInstance).AsExtended, FormatSettings);
-//                Result := DateTimeToIso8601();
+                Result := DateTimeToIso8601(AProperty.GetValue(AInstance).AsExtended, UseISO8601DateFormat);
               end
               else
                 Result := AProperty.GetValue(AInstance).AsExtended;
@@ -482,7 +480,7 @@ begin
         if (LTypeInfo = TypeInfo(TDateTime)) or
            (LTypeInfo = TypeInfo(TDate)) or
            (LTypeInfo = TypeInfo(TTime)) then
-          AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue))
+          AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue, UseISO8601DateFormat))
         else
           AProperty.SetValue(AInstance, Double(AValue));
       tkVariant:
@@ -515,20 +513,6 @@ begin
       raise Exception.Create('Erro no SetValue() da propriedade [' + AProperty.Name + ']' + sLineBreak + E.Message);
   end;
 end;
-
-//class function TJSONBrObject.DateTimeToIso8601(const AValue: TDateTime): string;
-//begin
-//  if AValue = 0 then
-//    Result := ''
-//  else
-//  if Frac(AValue) = 0 then
-//    Result := FormatDateTime('yyyy"-"mm"-"dd', AValue)
-//  else
-//  if Trunc(AValue) = 0 then
-//    Result := FormatDateTime('"T"hh":"nn":"ss', AValue)
-//  else
-//    Result := FormatDateTime('yyyy"-"mm"-"dd"T"hh":"nn":"ss', AValue);
-//end;
 
 function TJSONBrObject.DynArrayDoubleToJSON(const AValue: TValue): String;
 var
@@ -581,51 +565,6 @@ class function TJSONBrObject.IsBlob(const ATypeInfo: PTypeInfo): Boolean;
 begin
   Result := (ATypeInfo = TypeInfo(TByteDynArray)) and
             (PropWrap(ATypeInfo).Kind = $FF);
-end;
-
-class function TJSONBrObject.Iso8601ToDateTime(const AValue: string): TDateTime;
-var
-  Y, M, D, HH, MI, SS: Cardinal;
-begin
-  // YYYY-MM-DD   Thh:mm:ss  or  YYYY-MM-DDThh:mm:ss
-  // 1234567890   123456789      1234567890123456789
-  Result := StrToDateTimeDef(AValue, 0);
-  case Length(AValue) of
-    9:
-      if (AValue[1] = 'T') and (AValue[4] = ':') and (AValue[7] = ':') then
-      begin
-        HH := Ord(AValue[2]) * 10 + Ord(AValue[3]) - (48 + 480);
-        MI := Ord(AValue[5]) * 10 + Ord(AValue[6]) - (48 + 480);
-        SS := Ord(AValue[8]) * 10 + Ord(AValue[9]) - (48 + 480);
-        if (HH < 24) and (MI < 60) and (SS < 60) then
-          Result := EncodeTime(HH, MI, SS, 0);
-      end;
-    10:
-      if (AValue[5] = AValue[8]) and (Ord(AValue[8]) in [Ord('-'), Ord('/')]) then
-      begin
-        Y := Ord(AValue[1]) * 1000 + Ord(AValue[2]) * 100 + Ord(AValue[3]) * 10 + Ord(AValue[4]) - (48 + 480 + 4800 + 48000);
-        M := Ord(AValue[6]) * 10 + Ord(AValue[7]) - (48 + 480);
-        D := Ord(AValue[9]) * 10 + Ord(AValue[10]) - (48 + 480);
-        if (Y <= 9999) and ((M - 1) < 12) and ((D - 1) < 31) then
-          Result := EncodeDate(Y, M, D);
-      end;
-    19,24:
-      if (AValue[5] = AValue[8]) and
-         (Ord(AValue[8]) in [Ord('-'), Ord('/')]) and
-         (Ord(AValue[11]) in [Ord(' '), Ord('T')]) and
-         (AValue[14] = ':') and
-         (AValue[17] = ':') then
-      begin
-        Y := Ord(AValue[1]) * 1000 + Ord(AValue[2]) * 100 + Ord(AValue[3]) * 10 + Ord(AValue[4]) - (48 + 480 + 4800 + 48000);
-        M := Ord(AValue[6]) * 10 + Ord(AValue[7]) - (48 + 480);
-        D := Ord(AValue[9]) * 10 + Ord(AValue[10]) - (48 + 480);
-        HH := Ord(AValue[12]) * 10 + Ord(AValue[13]) - (48 + 480);
-        MI := Ord(AValue[15]) * 10 + Ord(AValue[16]) - (48 + 480);
-        SS := Ord(AValue[18]) * 10 + Ord(AValue[19]) - (48 + 480);
-        if (Y <= 9999) and ((M - 1) < 12) and ((D - 1) < 31) and (HH < 24) and (MI < 60) and (SS < 60) then
-          Result := EncodeDate(Y, M, D) + EncodeTime(HH, MI, SS, 0);
-      end;
-  end;
 end;
 
 function TJSONBrObject.JSONToObjectList<T>(const AJson: String): TObjectList<T>;
@@ -828,7 +767,7 @@ begin
     ExtractStrings([','], [' '], PChar(String(LValue)), LSplitList);
     SetLength(Result, LSplitList.Count);
     for LFor := 0 to LSplitList.Count -1 do
-      Result[LFor] := StrToCurr(LSplitList[LFor], FormatSettings);
+      Result[LFor] := StrToCurr(LSplitList[LFor], JsonBrFormatSettings);
   finally
     LSplitList.Free;
   end;
@@ -846,7 +785,7 @@ begin
     ExtractStrings([','], [' '], PChar(String(LValue)), LSplitList);
     SetLength(Result, LSplitList.Count);
     for LFor := 0 to LSplitList.Count -1 do
-      Result[LFor] := StrToFloat(LSplitList[LFor], FormatSettings);
+      Result[LFor] := StrToFloat(LSplitList[LFor], JsonBrFormatSettings);
   finally
     LSplitList.Free;
   end;
@@ -1549,10 +1488,6 @@ end;
 
 initialization
   JSONVariantType := TJSONVariant.Create;
-  {$IFDEF FORMATSETTINGS}
-  TJSONBrObject.FormatSettings := TFormatSettings.Create('en_US');
-  {$ELSE FORMATSETTINGS}
-  GetLocaleFormatSettings($0409, TJSONBrObject.FormatSettings);
-  {$ENDIF FORMATSETTINGS}
+  TJSONBrObject.UseISO8601DateFormat := True;
 
 end.

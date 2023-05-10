@@ -307,8 +307,6 @@ var
   LTypeInfo: PTypeInfo;
   LBreak: Boolean;
 
-  LCount: Integer;
-
   function IsBoolean: Boolean;
   var
     LTypeName: string;
@@ -387,10 +385,10 @@ begin
           else
           if AProperty.GetValue(AInstance).IsArray then
           begin
-            if EndsText('<System.String>', LTypeInfo.Name) then
+            if EndsText('<System.String>', String(LTypeInfo.Name)) then
               Result := DynArrayStringToJSON(AProperty.GetValue(AInstance))
             else
-            if EndsText('<System.Integer>', LTypeInfo.Name) then
+            if EndsText('<System.Integer>', String(LTypeInfo.Name)) then
               Result := DynArrayIntegerToJSON(AProperty.GetValue(AInstance))
             else
               Result := DynArrayDoubleToJSON(AProperty.GetValue(AInstance))
@@ -412,7 +410,7 @@ begin
     Result := nil;
   if not (ATypeInfo.Kind = tkDynArray) then
     Result := nil;
-  if not StartsText('TArray<', ATypeInfo.Name) then
+  if not StartsText('TArray<', String(ATypeInfo.Name)) then
     Result := nil;
 
   LValue := AValue;
@@ -420,19 +418,19 @@ begin
   LValue := ReplaceStr(LValue, ']', '');
   LValue := ReplaceStr(LValue, '"', '');
 //  LValue := ReplaceStr(LValue, '\', '');
-  if EndsText('<System.String>', ATypeInfo.Name) then
+  if EndsText('<System.String>', String(ATypeInfo.Name)) then
     Result := TValue.From<TArray<String>>(ResolveValueArrayString(LValue))
   else
-  if EndsText('<System.Integer>', ATypeInfo.Name) then
+  if EndsText('<System.Integer>', String(ATypeInfo.Name)) then
     Result := TValue.From<TArray<Integer>>(ResolveValueArrayInteger(LValue))
   else
-  if EndsText('<System.Int64>', ATypeInfo.Name) then
+  if EndsText('<System.Int64>', String(ATypeInfo.Name)) then
     Result := TValue.From<TArray<Int64>>(ResolveValueArrayInt64(LValue))
   else
-  if EndsText('<System.Double>', ATypeInfo.Name) then
+  if EndsText('<System.Double>', String(ATypeInfo.Name)) then
     Result := TValue.From<TArray<Double>>(ResolveValueArrayDouble(LValue))
   else
-  if EndsText('<System.Currency>', ATypeInfo.Name) then
+  if EndsText('<System.Currency>', String(ATypeInfo.Name)) then
     Result := TValue.From<TArray<Currency>>(ResolveValueArrayCurrency(LValue));
 end;
 
@@ -1336,7 +1334,6 @@ var
   LItem: TCollectionItem;
   LListType: TRttiType;
   LProperty: TRttiProperty;
-  LMethod: TRttiMethod;
   LObjectType: TObject;
 
   function MethodCall(const AObject: TObject; const AMethodName: string;

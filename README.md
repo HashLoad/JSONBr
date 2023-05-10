@@ -1,8 +1,8 @@
-# JSONBr Framework for Delphi
+# JSONBr Library for Delphi
 
-JSON BRASIL é um framework opensource que provê escritas arquivos JSON, de forma funcional e orientada a objeto, além dos recursos de gerar um JSON de um objeto e popular o objeto com base em um arquivo JSON, seu diferencial são os eventos onGetValue() e onSetValue() que dão a dinâmica de tratar seu próprio tipo de campo, alimentado assim o JSON e lendo esse campo dele.
+JSON BRASIL é uma library opensource que provê escritas arquivos JSON, de forma funcional e orientada a objeto, além dos recursos de gerar um JSON de um objeto e popular o objeto com base em um arquivo JSON, seu diferencial são os eventos onGetValue() e onSetValue() que dão a dinâmica de tratar seu próprio tipo de campo, alimentado assim o JSON e lendo esse campo dele.
 
-Essa classe estava enraizada ao projeto ORMBr, nela foi feito vários testes em questão de performance, o qual ela se saiu muito bem com as que foi confrontada, visto isso, foi visto a possibilidade de ser um framework independente, que pudesse ser usado até mesmo por outros projetos opensource, mas para isso, o primeiro passo a ser dado seria remover qualquer vínculo com framework ORMBr, então com um pouco de esforço e tempo de dedicação, nasceu o JSONBr.
+Essa classe estava enraizada ao projeto ORMBr, nela foi feito vários testes em questão de performance, o qual ela se saiu muito bem com as que foi confrontada, visto isso, foi visto a possibilidade de ser uma library independente, que pudesse ser usado até mesmo por outros projetos opensource, mas para isso, o primeiro passo a ser dado seria remover qualquer vínculo com framework ORMBr, então com um pouco de esforço e tempo de dedicação, nasceu o JSONBr.
 
 A cereja do bolo desse projeto é a dinâmica que ele oferece para outros projetos tratar seus tipos de campos criados, através dos dois eventos onGetValue e onSetValue, esses eventos quando usados intercepta o dado do evento interno, possibilitando assim, a verificação do tipo e o tratamento do valor do campo e como ele deve ser aplicado na tag no arquivo
 

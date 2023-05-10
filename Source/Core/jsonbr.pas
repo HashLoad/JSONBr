@@ -26,7 +26,9 @@ unit jsonbr;
 interface
 
 uses
+  SysUtils,
   Generics.Collections,
+  jsonbr.utils,
   jsonbr.writer,
   jsonbr.builders;
 
@@ -37,6 +39,8 @@ type
     class var FJSONWriter: TJSONWriter;
     class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static;
     class procedure SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static;
+    class function GetFormatSettings: TFormatSettings; static;
+    class procedure SetFormatSettings(const Value: TFormatSettings); static;
   public
     class constructor Create;
     class destructor Destroy;
@@ -46,8 +50,7 @@ type
       AStoreClassName: Boolean = False): string; overload;
     class function ObjectListToJsonString<T: class, constructor>(AObjectList: TObjectList<T>;
       AStoreClassName: Boolean = False): string; overload;
-    class function JsonToObject<T: class, constructor>(const AJson: string{;
-      AOptions: TJSONBrOptions = [joDateIsUTC, joDateFormatISO8601]}): T; overload;
+    class function JsonToObject<T: class, constructor>(const AJson: string): T; overload;
     class function JsonToObject<T: class>(AObject: T;
       const AJson: string): Boolean; overload;
     class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>;
@@ -58,6 +61,7 @@ type
     // Events GetValue and SetValue
     class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
     class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
+    class property FormatSettings: TFormatSettings read GetFormatSettings write SetFormatSettings;
   end;
 
 implementation
@@ -87,6 +91,16 @@ begin
   inherited;
 end;
 
+class function TJSONBr.GetFormatSettings: TFormatSettings;
+begin
+  Result := JsonBrFormatSettings;
+end;
+
+class procedure TJSONBr.SetFormatSettings(const Value: TFormatSettings);
+begin
+  JsonBrFormatSettings := Value;
+end;
+
 class procedure TJSONBr.SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
 begin
   FJSONObject.OnGetValue := Value;
@@ -103,8 +117,7 @@ begin
   Result := FJSONObject.JSONToObject(TObject(AObject), AJson);
 end;
 
-class function TJSONBr.JsonToObject<T>(const AJson: string{;
-  AOptions: TJSONBrOptions}): T;
+class function TJSONBr.JsonToObject<T>(const AJson: string): T;
 begin
   Result := FJSONObject.JSONToObject<T>(AJson);
 end;

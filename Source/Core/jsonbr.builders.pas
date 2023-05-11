@@ -152,7 +152,6 @@ type
     class function JSONVariantData(const AValue: Variant): TJSONBrVariantData;
     class procedure AppendChar(var AStr: string; AChr: char);
   public
-//    class var FormatSettings: TFormatSettings;
     class var UseISO8601DateFormat: Boolean;
     function ObjectToJSON(const AObject: TObject; const AStoreClassName: Boolean = False): String;
     function DynArrayStringToJSON(const AValue: TValue): String;
@@ -622,6 +621,8 @@ var
   {$ENDIF DELPHI15_UP}
   LFor: Integer;
   LValue: TValue;
+  LStringBuilder: TStringBuilder;
+  LResultBuilder: TStringBuilder;
 begin
   LValue := nil;
   if AObject = nil then
@@ -629,47 +630,64 @@ begin
     Result := 'null';
     Exit;
   end;
-  if AObject.InheritsFrom(TList) then
+  if AObject is TList then
   begin
     if TList(AObject).Count = 0 then
       Result := '[]'
     else
     begin
-      Result := '[';
-      for LFor := 0 to TList(AObject).Count - 1 do
-        Result := Result +
-                  ObjectToJSON(TObject(TList(AObject).List[LFor]),
-                  AStoreClassName) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TList(AObject).Count - 1 do
+          LStringBuilder.Append(ObjectToJSON(TObject(TList(AObject).List[LFor]),
+                                AStoreClassName))
+                        .Append(',');
+        LStringBuilder.Chars[LStringBuilder.Length - 1] := ']';
+        Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
     Exit;
   end;
-  if AObject.InheritsFrom(TStrings) then
+  if AObject is TStrings then
   begin
     if TStrings(AObject).Count = 0 then
       Result := '[]'
     else
     begin
-      Result := '[';
-      for LFor := 0 to TStrings(AObject).Count - 1 do
-        Result := Result +
-                  StringToJSON(TStrings(AObject).Strings[LFor]) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TStrings(AObject).Count - 1 do
+          LStringBuilder.Append(StringToJSON(TStrings(AObject).Strings[LFor]))
+                        .Append(',');
+        LStringBuilder.Chars[LStringBuilder.Length - 1] := ']';
+        Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
     Exit;
   end;
-  if AObject.InheritsFrom(TCollection) then
+  if AObject is TCollection then
   begin
     if TCollection(AObject).Count = 0 then
       Result := '[]'
     else
     begin
-      Result := '[';
-      for LFor := 0 to TCollection(AObject).Count - 1 do
-        Result := Result +
-                  ObjectToJSON(TCollection(AObject).Items[LFor],
-                  AStoreClassName) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TCollection(AObject).Count - 1 do
+          LStringBuilder.Append(ObjectToJSON(TCollection(AObject).Items[LFor], AStoreClassName))
+                        .Append(',');
+        LStringBuilder.Chars[LStringBuilder.Length-1] := ']';
+        Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
     Exit;
   end;
@@ -679,7 +697,6 @@ begin
     Result := 'null';
     Exit;
   end;
-
   if (Pos('TObjectList<', AObject.ClassName) > 0) or
      (Pos('TList<', AObject.ClassName) > 0) then
   begin
@@ -693,46 +710,84 @@ begin
         Result := '[]'
       else
       begin
-        Result := '[';
-        for LFor := 0 to LValue.GetArrayLength -1 do
-          Result := Result +
-                    ObjectToJSON(LValue.GetArrayElement(LFor).AsObject, AStoreClassName) + ',';
-         Result[Length(Result)] := ']';
-      end
+        LStringBuilder := TStringBuilder.Create;
+        try
+          LStringBuilder.Append('[');
+          for LFor := 0 to LValue.GetArrayLength -1 do
+            LStringBuilder.Append(ObjectToJSON(LValue.GetArrayElement(LFor).AsObject, AStoreClassName)).Append(',');
+          LStringBuilder.Chars[LStringBuilder.Length-1] := ']';
+          Result := LStringBuilder.ToString;
+        finally
+          LStringBuilder.Free;
+        end;
+      end;
+      Exit;
     end;
     {$ELSE DELPHI15_UP}
     if TList(AObject).Count = 0 then
-      Result := '[]'
+      Result := '[]';
     else
     begin
-      Result := '[';
-      for LFor := 0 to TList(AObject).Count -1 do
-        Result := Result +
-                  ObjectToJSON(TList(AObject).Items[LFor], AStoreClassName) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TList(AObject).Count -1 do
+            LStringBuilder.Append(ObjectToJSON(TList(AObject).Items[LFor], AStoreClassName)).Append(',');
+          LStringBuilder.Chars[LStringBuilder.Length-1] := ']';
+          Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
-    {$ENDIF DELPHI15_UP}
     Exit;
+    {$ENDIF DELPHI15_UP}
   end;
-
-  if AStoreClassName then
-    Result := '{"ClassName":"' + AObject.ClassName + '",'
-  else
-    Result := '{';
-
-  for LProperty in LTypeInfo.GetProperties do
-  begin
-    if (not LProperty.IsWritable) then
-      Continue;
-
-    if StartsText('TArray<', LProperty.PropertyType.Name) then
-      Result := Result + StringToJSON(LProperty.Name) + ':' +
-                         GetInstanceProp(AObject, LProperty) + ','
+  LResultBuilder := TStringBuilder.Create;
+  try
+    if AStoreClassName then
+      LResultBuilder.Append('{"ClassName":"' + AObject.ClassName + '",')
     else
-      Result := Result + StringToJSON(LProperty.Name) + ':' +
-                         ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
+      LResultBuilder.Append('{');
+
+    for LProperty in LTypeInfo.GetProperties do
+    begin
+      if (not LProperty.IsWritable) then
+        Continue;
+      if LProperty.PropertyType.TypeKind = tkArray then
+        LResultBuilder.Append(StringToJSON(LProperty.Name))
+                      .Append(':')
+                      .Append(String(GetInstanceProp(AObject, LProperty)))
+                      .Append(',')
+      else
+        LResultBuilder.Append(StringToJSON(LProperty.Name))
+                      .Append(':')
+                      .Append(ValueToJSON(GetInstanceProp(AObject, LProperty)))
+                      .Append(',');
+    end;
+    LResultBuilder.Chars[LResultBuilder.Length - 1] := '}';
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result[Length(Result)] := '}';
+
+//  if AStoreClassName then
+//    Result := '{"ClassName":"' + AObject.ClassName + '",'
+//  else
+//    Result := '{';
+//
+//  for LProperty in LTypeInfo.GetProperties do
+//  begin
+//    if LProperty.IsWritable then
+//    begin
+//      if StartsText('TArray<', LProperty.PropertyType.Name) then
+//        Result := Result + StringToJSON(LProperty.Name) + ':' +
+//                           GetInstanceProp(AObject, LProperty) + ','
+//      else
+//        Result := Result + StringToJSON(LProperty.Name) + ':' +
+//                           ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
+//    end;
+//  end;
+//  Result[Length(Result)] := '}';
 end;
 
 class function TJSONBrObject.ResolveValueArrayString(const AValue: Variant): TArray<String>;

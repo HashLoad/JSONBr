@@ -6,6 +6,7 @@ program TestJSON;
 {$STRONGLINKTYPES ON}
 uses
   System.SysUtils,
+  Vcl.Graphics,
   {$IFDEF TESTINSIGHT}
   TestInsight.DUnitX,
   {$ELSE}
@@ -20,7 +21,10 @@ uses
   jsonbr in '..\Source\Core\jsonbr.pas',
   jsonbr.writer in '..\Source\Core\jsonbr.writer.pas',
   XSuperJSON in 'x-superobject\XSuperJSON.pas',
-  XSuperObject in 'x-superobject\XSuperObject.pas';
+  XSuperObject in 'x-superobject\XSuperObject.pas',
+  test.res_json in 'test.res_json.pas',
+  test.json_br in 'test.json_br.pas',
+  test.xsuper in 'test.xsuper.pas';
 
 {$IFNDEF TESTINSIGHT}
 var
@@ -63,6 +67,8 @@ begin
     //We don't want this happening when running under CI.
     if TDUnitX.Options.ExitBehavior = TDUnitXExitBehavior.Pause then
     begin
+      SetColorConsole(clWhite);
+      System.Writeln(' ');
       System.Write('Done.. press <Enter> key to quit.');
       System.Readln;
     end;

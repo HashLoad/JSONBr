@@ -3,6 +3,7 @@ unit Test.JSON;
 interface
 
 uses
+  System.Diagnostics,
   System.SysUtils,
   Winapi.Windows,
   Vcl.Graphics,
@@ -61,16 +62,16 @@ uses
   jsonbr.builders,
   JSON,
   REST.Json,
+  DUnitX.utils,
   XSuperJSON,
   XSuperObject,
-  JsonDataObjects;
-
-const
-  cMESSAGE = 'segundos %f => milisegundos %d';
+  test.res_json,
+  test.json_br,
+  test.xsuper;
 
 procedure TTestJSON.Setup;
 begin
-  SetColorConsole(clGreen);
+
 end;
 
 procedure TTestJSON.TearDown;
@@ -80,253 +81,178 @@ end;
 
 procedure TTestJSON.XSuperObjectJsonToObject;
 var
-  LObject: TRootDTO;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
-  try
-    LInit := GetTickCount;
-    LObject := XSuperObject.TJSON.Parse<TRootDTO>(SAMPLE_JSON_1);
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LObject.Free;
-  end;
+  Stopwatch := TStopwatch.StartNew;
+  _XSuperObjectJsonToObject;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.XSuperObjectJsonToObjectList;
 var
-  LInit, LEnd: Cardinal;
-  LList: TObjectList<TRootDTO>;
+  Stopwatch: TStopwatch;
 begin
-  LList := TObjectList<TRootDTO>.Create;
-  try
-    LInit := GetTickCount;
-    LList := XSuperObject.TJSON.Parse<TObjectList<TRootDTO>>(FJsonArray);
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LList.Clear;
-    LList.Free;
-  end;
+  Stopwatch := TStopwatch.StartNew;
+  _XSuperObjectJsonToObjectList;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.XSuperObjectLoop50000;
 var
-  LList: TObjectList<TRootDTO>;
-  LObject: TRootDTO;
-  LFor: Integer;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
+  SetColorConsole(clPurple);
   System.Writeln(' ');
-  LList := TObjectList<TRootDTO>.Create;
-  try
-    System.Writeln('X-SuperObject');
-    LInit := GetTickCount;
-    for LFor := 1 to SAMPLE_JSON_1_COUNT do
-    begin
-      LObject := XSuperObject.TJSON.Parse<TRootDTO>(SAMPLE_JSON_1);
-      LList.Add(LObject);
-    end;
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LList.Clear;
-    LList.Free;
-  end;
+
+  Stopwatch := TStopwatch.StartNew;
+  _XSuperObjectLoop50000;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.XSuperObjectObjectListToJson;
 var
-  LInit, LEnd: Cardinal;
-  LJsonArray: String;
+  Stopwatch: TStopwatch;
 begin
-  LInit := GetTickCount;
-  LJsonArray := XSuperObject.TJSON.Stringify<TObjectList<TRootDTO>>(FObjectList5000);
-  LEnd := GetTickCount;
-  //
-  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
+  Stopwatch := TStopwatch.StartNew;
+  _XSuperObjectObjectListToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.XSuperObjectObjectToJson;
 var
-  LJson: String;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
-  LInit := GetTickCount;
-  LJson := XSuperObject.TJSON.Stringify<TRootDTO>(FObject);
-  LEnd := GetTickCount;
-  //
-  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
+  Stopwatch := TStopwatch.StartNew;
+  _XSuperObjectObjectToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.JSONBrJsonToObject;
 var
-  LObject: TRootDTO;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
-  try
-    LInit := GetTickCount;
-    LObject := TJSONBr.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LObject.Free;
-  end;
+  Stopwatch := TStopwatch.StartNew;
+  _JSONBrJsonToObject;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.JSONBrJsonToObjectList;
 var
-  LList: TObjectList<TRootDTO>;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
-  try
-    LInit := GetTickCount;
-    LList := TJSONBr.JsonToObjectList<TRootDTO>(FJsonBrArray);
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LList.Clear;
-    LList.Free;
-  end;
-end;
+  Stopwatch := TStopwatch.StartNew;
+  _JSONBrJsonToObjectList;
+  Stopwatch.Stop;
 
-procedure TTestJSON.JSONBrObjectListToJson;
-var
-  LInit, LEnd: Cardinal;
-  LJsonArray: String;
-begin
-  LInit := GetTickCount;
-  LJsonArray := TJSONBr.ObjectListToJsonString<TRootDTO>(FObjectList5000);
-  LEnd := GetTickCount;
-  //
-  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-end;
-
-procedure TTestJSON.JSONBrObjectToJson;
-var
-  LJson: String;
-  LInit, LEnd: Cardinal;
-begin
-  LInit := GetTickCount;
-  LJson := TJSONBr.ObjectToJsonString(FObject);
-  LEnd := GetTickCount;
-  //
-  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
+  System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.JSONBrLoop50000;
 var
-  LList: TObjectList<TRootDTO>;
-  LObject: TRootDTO;
-  LFor: Integer;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
+  SetColorConsole(clGreen);
   System.Writeln(' ');
-  LList := TObjectList<TRootDTO>.Create;
-  try
-    System.Writeln('.JSONBr Framework');
-    LInit := GetTickCount;
-    for LFor := 1 to SAMPLE_JSON_1_COUNT do
-    begin
-      LObject := TJSONBr.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
-      LList.Add(LObject);
-    end;
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LList.Clear;
-    LList.Free;
-  end;
+  System.Writeln('.JSONBr Framework');
+
+  Stopwatch := TStopwatch.StartNew;
+  _JSONBrLoop50000;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.JSONBrObjectListToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _JSONBrObjectListToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.JSONBrObjectToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _JSONBrObjectToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.RESTJsonJsonToObject;
 var
-  LObject: TRootDTO;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
-  try
-    LInit := GetTickCount;
-    LObject := REST.Json.TJson.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LObject.Free;
-  end;
+  Stopwatch := TStopwatch.StartNew;
+  _RESTJsonJsonToObject;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.RESTJsonJsonToObjectList;
 var
-  LInit, LEnd: Cardinal;
-  LList: TObjectList<TRootDTO>;
+  Stopwatch: TStopwatch;
 begin
-  LList := TObjectList<TRootDTO>.Create;
-  try
-    LInit := GetTickCount;
-    LList := REST.Json.TJson.JsonToObject<TObjectList<TRootDTO>>(FJsonArray);
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LList.Clear;
-    LList.Free;
-  end;
-end;
+  Stopwatch := TStopwatch.StartNew;
+  _RESTJsonJsonToObjectList;
+  Stopwatch.Stop;
 
-procedure TTestJSON.RESTJsonObjectListToJson;
-var
-  LInit, LEnd: Cardinal;
-  LJsonArray: String;
-begin
-  LInit := GetTickCount;
-  LJsonArray := REST.Json.TJson.ObjectToJsonString(FObjectList5000);
-  LEnd := GetTickCount;
-  //
-  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-end;
-
-procedure TTestJSON.RESTJsonObjectToJson;
-var
-  LJson: String;
-  LInit, LEnd: Cardinal;
-begin
-  LInit := GetTickCount;
-  LJson := REST.Json.TJson.ObjectToJsonString(FObject);
-  LEnd := GetTickCount;
-  //
-  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
+  System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.RESTJsonLoop50000;
 var
-  LList: TObjectList<TRootDTO>;
-  LObject: TRootDTO;
-  LFor: Integer;
-  LInit, LEnd: Cardinal;
+  Stopwatch: TStopwatch;
 begin
+  SetColorConsole(clRed);
   System.Writeln(' ');
-  LList := TObjectList<TRootDTO>.Create;
-  try
-    System.Writeln('REST.Json Delphi');
-    LInit := GetTickCount;
-    for LFor := 1 to SAMPLE_JSON_1_COUNT do
-    begin
-      LObject := REST.Json.TJson.JsonToObject<TRootDTO>(SAMPLE_JSON_1);
-      LList.Add(LObject);
-    end;
-    LEnd := GetTickCount;
-    //
-    System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [(LEnd - LInit) / 1000, (LEnd - LInit)]) + ')');
-  finally
-    LList.Clear;
-    LList.Free;
-  end;
+  System.Writeln('REST.Json Delphi');
+
+  Stopwatch := TStopwatch.StartNew;
+  _RESTJsonLoop50000;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.RESTJsonObjectListToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _RESTJsonObjectListToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.RESTJsonObjectToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _RESTJsonObjectToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 initialization

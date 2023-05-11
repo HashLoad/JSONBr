@@ -19,6 +19,7 @@ procedure GeraObject;
 procedure GeraJsonArray;
 
 const
+  cMESSAGE = 'segundos %f => milisegundos %d';
   SAMPLE_JSON_1_COUNT = 50000;
   SAMPLE_JSON_1 = // from http://json.org/example.html
     '{' + #13#10 +

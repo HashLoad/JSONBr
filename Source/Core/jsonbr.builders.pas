@@ -39,8 +39,12 @@ uses
   jsonbr.utils;
 
 type
-  TJSONBrObject = class;
+  TStringBuilderHelper = class helper for TStringBuilder
+  public
+    procedure ReplaceLastChar(const AChar: Char);
+  end;
 
+  TJSONBrObject = class;
   TNotifyEventGetValue = procedure(const AInstance: TObject;
 								   const AProperty: TRttiProperty;
 								   var AResult: Variant;
@@ -49,16 +53,12 @@ type
                                    const AProperty: TRttiProperty;
 								   const AValue: Variant;
 								   var ABreak: Boolean) of Object;
-
   EJSONBrException = class(Exception);
-
   TStringDynamicArray = array of String;
   TVariantDynamicArray = array of Variant;
-
   TJSONBrVariantKind = (vkUndefined, vkObject, vkArray);
   TJSONBrParserKind = (pkNone, pkNull, pkFalse, pkTrue, pkString,
                        pkInteger, pkFloat, pkObject, pkArray);
-
   PropWrap = packed record
     FillBytes: array [0..SizeOf(Pointer)-2] of Byte;
     Kind: Byte;
@@ -217,26 +217,33 @@ var
   procedure DoEscape;
   var
     LChr: Integer;
+    LResultBuilder: TStringBuilder;
   begin
-    Result := '"' + Copy(AText, 1, LFor - 1);
-    for LChr := LFor to LLen do
-    begin
-      case AText[LChr] of
-        #8:  Result := Result + '\b';
-        #9:  Result := Result + '\t';
-        #10: Result := Result + '\n';
-        #12: Result := Result + '\f';
-        #13: Result := Result + '\r';
-        '\': Result := Result + '\\';
-        '"': Result := Result + '\"';
-      else
-        if AText[LChr] < ' ' then
-          Result := Result + '\u00' + IntToHex(Ord(AText[LChr]), 2)
+    LResultBuilder := TStringBuilder.Create;
+    try
+      LResultBuilder.Append('"' + Copy(AText, 1, LFor - 1));
+      for LChr := LFor to LLen do
+      begin
+        case AText[LChr] of
+          #8:  LResultBuilder.Append('\b');
+          #9:  LResultBuilder.Append('\t');
+          #10: LResultBuilder.Append('\n');
+          #12: LResultBuilder.Append('\f');
+          #13: LResultBuilder.Append('\r');
+          '\': LResultBuilder.Append('\\');
+          '"': LResultBuilder.Append('\"');
         else
-          AppendChar(Result, AText[LChr]);
+          if AText[LChr] < ' ' then
+            LResultBuilder.Append('\u00' + IntToHex(Ord(AText[LChr]), 2))
+          else
+            LResultBuilder.Append(AText[LChr]);
+        end;
       end;
+      LResultBuilder.Append('"');
+      Result := LResultBuilder.ToString;
+    finally
+      LResultBuilder.Free;
     end;
-    AppendChar(Result, '"');
   end;
 
 begin
@@ -416,21 +423,20 @@ begin
   LValue := ReplaceStr(LValue, '[', '');
   LValue := ReplaceStr(LValue, ']', '');
   LValue := ReplaceStr(LValue, '"', '');
-//  LValue := ReplaceStr(LValue, '\', '');
   if EndsText('<System.String>', String(ATypeInfo.Name)) then
-    Result := TValue.From<TArray<String>>(ResolveValueArrayString(LValue))
+    Result := TValue.From(ResolveValueArrayString(LValue))
   else
   if EndsText('<System.Integer>', String(ATypeInfo.Name)) then
-    Result := TValue.From<TArray<Integer>>(ResolveValueArrayInteger(LValue))
+    Result := TValue.From(ResolveValueArrayInteger(LValue))
   else
   if EndsText('<System.Int64>', String(ATypeInfo.Name)) then
-    Result := TValue.From<TArray<Int64>>(ResolveValueArrayInt64(LValue))
+    Result := TValue.From(ResolveValueArrayInt64(LValue))
   else
   if EndsText('<System.Double>', String(ATypeInfo.Name)) then
-    Result := TValue.From<TArray<Double>>(ResolveValueArrayDouble(LValue))
+    Result := TValue.From(ResolveValueArrayDouble(LValue))
   else
   if EndsText('<System.Currency>', String(ATypeInfo.Name)) then
-    Result := TValue.From<TArray<Currency>>(ResolveValueArrayCurrency(LValue));
+    Result := TValue.From(ResolveValueArrayCurrency(LValue));
 end;
 
 class procedure TJSONBrObject.SetInstanceProp(const AInstance: TObject;
@@ -515,47 +521,67 @@ function TJSONBrObject.DynArrayDoubleToJSON(const AValue: TValue): String;
 var
   LFor: Integer;
   LValue: Double;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AValue.GetArrayLength -1 do
-  begin
-    LValue := AValue.GetArrayElement(LFor).AsExtended;
-    Result := Result + LValue.ToString;
-    if LFor < AValue.GetArrayLength - 1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AValue.GetArrayLength -1 do
+    begin
+      LValue := AValue.GetArrayElement(LFor).AsExtended;
+      LResultBuilder.Append(LValue.ToString);
+      if LFor < AValue.GetArrayLength - 1 then
+        LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 function TJSONBrObject.DynArrayIntegerToJSON(const AValue: TValue): String;
 var
   LFor: Integer;
   LValue: Integer;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AValue.GetArrayLength -1 do
-  begin
-    LValue := AValue.GetArrayElement(LFor).AsInteger;
-    Result := Result + LValue.ToString;
-    if LFor < AValue.GetArrayLength - 1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AValue.GetArrayLength -1 do
+    begin
+      LValue := AValue.GetArrayElement(LFor).AsInteger;
+      LResultBuilder.Append(LValue.ToString);
+      if LFor < AValue.GetArrayLength - 1 then
+        LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 function TJSONBrObject.DynArrayStringToJSON(const AValue: TValue): String;
 var
   LFor: Integer;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AValue.GetArrayLength -1 do
-  begin
-//    Result := Result + '\"' + AValue.GetArrayElement(LFor).AsString + '\"';
-    Result := Result + '"' + AValue.GetArrayElement(LFor).AsString + '"';
-    if LFor < AValue.GetArrayLength -1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AValue.GetArrayLength -1 do
+    begin
+      LResultBuilder.Append('"' + AValue.GetArrayElement(LFor).AsString + '"');
+      if LFor < AValue.GetArrayLength -1 then
+        LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 class function TJSONBrObject.IsBlob(const ATypeInfo: PTypeInfo): Boolean;
@@ -643,7 +669,7 @@ begin
           LStringBuilder.Append(ObjectToJSON(TObject(TList(AObject).List[LFor]),
                                 AStoreClassName))
                         .Append(',');
-        LStringBuilder.Chars[LStringBuilder.Length - 1] := ']';
+        LStringBuilder.ReplaceLastChar(']');
         Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
@@ -663,7 +689,7 @@ begin
         for LFor := 0 to TStrings(AObject).Count - 1 do
           LStringBuilder.Append(StringToJSON(TStrings(AObject).Strings[LFor]))
                         .Append(',');
-        LStringBuilder.Chars[LStringBuilder.Length - 1] := ']';
+        LStringBuilder.ReplaceLastChar(']');
         Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
@@ -683,7 +709,7 @@ begin
         for LFor := 0 to TCollection(AObject).Count - 1 do
           LStringBuilder.Append(ObjectToJSON(TCollection(AObject).Items[LFor], AStoreClassName))
                         .Append(',');
-        LStringBuilder.Chars[LStringBuilder.Length-1] := ']';
+        LStringBuilder.ReplaceLastChar(']');
         Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
@@ -715,7 +741,7 @@ begin
           LStringBuilder.Append('[');
           for LFor := 0 to LValue.GetArrayLength -1 do
             LStringBuilder.Append(ObjectToJSON(LValue.GetArrayElement(LFor).AsObject, AStoreClassName)).Append(',');
-          LStringBuilder.Chars[LStringBuilder.Length-1] := ']';
+          LStringBuilder.ReplaceLastChar(']');
           Result := LStringBuilder.ToString;
         finally
           LStringBuilder.Free;
@@ -733,7 +759,7 @@ begin
         LStringBuilder.Append('[');
         for LFor := 0 to TList(AObject).Count -1 do
             LStringBuilder.Append(ObjectToJSON(TList(AObject).Items[LFor], AStoreClassName)).Append(',');
-          LStringBuilder.Chars[LStringBuilder.Length-1] := ']';
+          LStringBuilder.ReplaceLastChar(']');
           Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
@@ -764,30 +790,11 @@ begin
                       .Append(ValueToJSON(GetInstanceProp(AObject, LProperty)))
                       .Append(',');
     end;
-    LResultBuilder.Chars[LResultBuilder.Length - 1] := '}';
+    LResultBuilder.ReplaceLastChar('}');
     Result := LResultBuilder.ToString;
   finally
     LResultBuilder.Free;
   end;
-
-//  if AStoreClassName then
-//    Result := '{"ClassName":"' + AObject.ClassName + '",'
-//  else
-//    Result := '{';
-//
-//  for LProperty in LTypeInfo.GetProperties do
-//  begin
-//    if LProperty.IsWritable then
-//    begin
-//      if StartsText('TArray<', LProperty.PropertyType.Name) then
-//        Result := Result + StringToJSON(LProperty.Name) + ':' +
-//                           GetInstanceProp(AObject, LProperty) + ','
-//      else
-//        Result := Result + StringToJSON(LProperty.Name) + ':' +
-//                           ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
-//    end;
-//  end;
-//  Result[Length(Result)] := '}';
 end;
 
 class function TJSONBrObject.ResolveValueArrayString(const AValue: Variant): TArray<String>;
@@ -1352,6 +1359,7 @@ end;
 function TJSONBrVariantData.ToJSON: String;
 var
   LFor: Integer;
+  LResultBuilder: TStringBuilder;
 begin
   case FVKind of
     vkObject:
@@ -1359,23 +1367,36 @@ begin
         Result := '{}'
       else
       begin
-        Result := '{';
-        for LFor := 0 to FVCount - 1 do
-          Result := Result +
-                    TJSONBrObject.StringToJSON(FNames[LFor]) + ':' +
-                    TJSONBrObject.ValueToJSON(FValues[LFor]) + ',';
-        Result[Length(Result)] := '}';
+        LResultBuilder := TStringBuilder.Create;
+        try
+          LResultBuilder.Append('{');
+          for LFor := 0 to FVCount - 1 do
+            LResultBuilder.Append(TJSONBrObject.StringToJSON(FNames[LFor]))
+                          .Append(':')
+                          .Append(TJSONBrObject.ValueToJSON(FValues[LFor]))
+                          .Append(',');
+          LResultBuilder.ReplaceLastChar('}');
+          Result := LResultBuilder.ToString;
+        finally
+          LResultBuilder.Free;
+        end;
       end;
     vkArray:
       if FVCount = 0 then
         Result := '[]'
       else
       begin
-        Result := '[';
-        for LFor := 0 to FVCount - 1 do
-          Result := Result +
-                    TJSONBrObject.ValueToJSON(FValues[LFor]) + ',';
-        Result[Length(Result)] := ']';
+        LResultBuilder := TStringBuilder.Create;
+        try
+          LResultBuilder.Append('[');
+          for LFor := 0 to FVCount - 1 do
+            LResultBuilder.Append(TJSONBrObject.ValueToJSON(FValues[LFor]))
+                          .Append(',');
+          LResultBuilder.ReplaceLastChar(']');
+          Result := LResultBuilder.ToString;
+        finally
+          LResultBuilder.Free;
+        end;
       end;
   else
     Result := 'null';
@@ -1536,6 +1557,18 @@ function TJSONVariant.SetProperty(const AVarData: TVarData; const AName: String;
 begin
   TJSONBrVariantData(AVarData).SetValue(AName, Variant(AValue));
   Result := True;
+end;
+
+procedure TStringBuilderHelper.ReplaceLastChar(const AChar: Char);
+begin
+  if Self.Length > 1 then
+  begin
+    // Remove espaço final vazio
+    if Self.Chars[Self.Length - 1] = ' ' then
+      Self.Remove(Self.Length - 1, 1);
+    // Troca o último caracter
+    Self.Chars[Self.Length - 1] := AChar;
+  end;
 end;
 
 initialization

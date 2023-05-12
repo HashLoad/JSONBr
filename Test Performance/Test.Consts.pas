@@ -104,6 +104,7 @@ begin
 end;
 
 initialization
+  SetColorConsole(clAqua);
   System.Writeln('Aguarde!!! Inicializando variáveis de ambiente para processamento!');
   System.Writeln(' ');
   GeraObjectList;

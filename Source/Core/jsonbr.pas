@@ -126,30 +126,44 @@ class function TJSONBr.ObjectListToJsonString(AObjectList: TObjectList<TObject>;
   AStoreClassName: Boolean): string;
 var
   LFor: Integer;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AObjectList.Count -1 do
-  begin
-    Result := Result + ObjectToJsonString(AObjectList.Items[LFor], AStoreClassName);
-    if LFor < AObjectList.Count -1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AObjectList.Count -1 do
+    begin
+      LResultBuilder.Append(ObjectToJsonString(AObjectList.Items[LFor], AStoreClassName));
+      if LFor < AObjectList.Count -1 then
+       LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 class function TJSONBr.ObjectListToJsonString<T>(AObjectList: TObjectList<T>;
   AStoreClassName: Boolean): string;
 var
   LFor: Integer;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AObjectList.Count -1 do
-  begin
-    Result := Result + ObjectToJsonString(T(AObjectList.Items[LFor]), AStoreClassName);
-    if LFor < AObjectList.Count -1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AObjectList.Count -1 do
+    begin
+      LResultBuilder.Append(ObjectToJsonString(T(AObjectList.Items[LFor]), AStoreClassName));
+      if LFor < AObjectList.Count -1 then
+        LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 class function TJSONBr.ObjectToJsonString(AObject: TObject;

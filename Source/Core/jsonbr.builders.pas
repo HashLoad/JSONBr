@@ -35,11 +35,16 @@ uses
   Variants,
   TypInfo,
   Types,
-  Generics.Collections;
+  Generics.Collections,
+  jsonbr.utils;
 
 type
-  TJSONBrObject = class;
+  TStringBuilderHelper = class helper for TStringBuilder
+  public
+    procedure ReplaceLastChar(const AChar: Char);
+  end;
 
+  TJSONBrObject = class;
   TNotifyEventGetValue = procedure(const AInstance: TObject;
 								   const AProperty: TRttiProperty;
 								   var AResult: Variant;
@@ -48,16 +53,12 @@ type
                                    const AProperty: TRttiProperty;
 								   const AValue: Variant;
 								   var ABreak: Boolean) of Object;
-
   EJSONBrException = class(Exception);
-
   TStringDynamicArray = array of String;
   TVariantDynamicArray = array of Variant;
-
   TJSONBrVariantKind = (vkUndefined, vkObject, vkArray);
   TJSONBrParserKind = (pkNone, pkNull, pkFalse, pkTrue, pkString,
                        pkInteger, pkFloat, pkObject, pkArray);
-
   PropWrap = packed record
     FillBytes: array [0..SizeOf(Pointer)-2] of Byte;
     Kind: Byte;
@@ -150,10 +151,8 @@ type
     class function GetValueArray(const ATypeInfo: PTypeInfo; const AValue: Variant): TValue;
     class function JSONVariantData(const AValue: Variant): TJSONBrVariantData;
     class procedure AppendChar(var AStr: string; AChr: char);
-//    class function DateTimeToIso8601(const AValue: TDateTime): string; static;
-    class function Iso8601ToDateTime(const AValue: string): TDateTime;
   public
-    class var FormatSettings: TFormatSettings;
+    class var UseISO8601DateFormat: Boolean;
     function ObjectToJSON(const AObject: TObject; const AStoreClassName: Boolean = False): String;
     function DynArrayStringToJSON(const AValue: TValue): String;
     function DynArrayIntegerToJSON(const AValue: TValue): String;
@@ -218,26 +217,33 @@ var
   procedure DoEscape;
   var
     LChr: Integer;
+    LResultBuilder: TStringBuilder;
   begin
-    Result := '"' + Copy(AText, 1, LFor - 1);
-    for LChr := LFor to LLen do
-    begin
-      case AText[LChr] of
-        #8:  Result := Result + '\b';
-        #9:  Result := Result + '\t';
-        #10: Result := Result + '\n';
-        #12: Result := Result + '\f';
-        #13: Result := Result + '\r';
-        '\': Result := Result + '\\';
-        '"': Result := Result + '\"';
-      else
-        if AText[LChr] < ' ' then
-          Result := Result + '\u00' + IntToHex(Ord(AText[LChr]), 2)
+    LResultBuilder := TStringBuilder.Create;
+    try
+      LResultBuilder.Append('"' + Copy(AText, 1, LFor - 1));
+      for LChr := LFor to LLen do
+      begin
+        case AText[LChr] of
+          #8:  LResultBuilder.Append('\b');
+          #9:  LResultBuilder.Append('\t');
+          #10: LResultBuilder.Append('\n');
+          #12: LResultBuilder.Append('\f');
+          #13: LResultBuilder.Append('\r');
+          '\': LResultBuilder.Append('\\');
+          '"': LResultBuilder.Append('\"');
         else
-          AppendChar(Result, AText[LChr]);
+          if AText[LChr] < ' ' then
+            LResultBuilder.Append('\u00' + IntToHex(Ord(AText[LChr]), 2))
+          else
+            LResultBuilder.Append(AText[LChr]);
+        end;
       end;
+      LResultBuilder.Append('"');
+      Result := LResultBuilder.ToString;
+    finally
+      LResultBuilder.Free;
     end;
-    AppendChar(Result, '"');
   end;
 
 begin
@@ -278,8 +284,7 @@ begin
             Result := 'false';
         end;
       varDate:
-        Result := AnsiQuotedStr(DateTimeToStr(TVarData(AValue).VDouble, FormatSettings), '"');
-//        Result := AnsiQuotedStr(DateTimeToIso8601(TVarData(AValue).VDouble), '"');
+        Result := AnsiQuotedStr(DateTimeToIso8601(TVarData(AValue).VDouble, UseISO8601DateFormat), '"');
     else
       if VarIsOrdinal(AValue) then
       begin
@@ -290,7 +295,7 @@ begin
       if VarIsFloat(AValue) then
       begin
         LDouble := AValue;
-        Result := FloatToStr(LDouble, TJSONBrObject.FormatSettings)
+        Result := FloatToStr(LDouble, JsonBrFormatSettings)
       end
       else
       if VarIsStr(AValue) then
@@ -307,8 +312,6 @@ var
   LObject: TObject;
   LTypeInfo: PTypeInfo;
   LBreak: Boolean;
-
-  LCount: Integer;
 
   function IsBoolean: Boolean;
   var
@@ -342,7 +345,7 @@ begin
         case GetTypeData(LTypeInfo)^.FloatType of
           ftSingle:
             begin
-              Result := StrToFloat(AProperty.GetValue(AInstance).AsString, TJSONBrObject.FormatSettings);
+              Result := StrToFloat(AProperty.GetValue(AInstance).AsString, JsonBrFormatSettings);
             end;
           ftDouble:
             begin
@@ -350,8 +353,7 @@ begin
                  (LTypeInfo = TypeInfo(TDate))     or
                  (LTypeInfo = TypeInfo(TTime))     then
               begin
-                Result := DateTimeToStr(AProperty.GetValue(AInstance).AsExtended, FormatSettings);
-//                Result := DateTimeToIso8601();
+                Result := DateTimeToIso8601(AProperty.GetValue(AInstance).AsExtended, UseISO8601DateFormat);
               end
               else
                 Result := AProperty.GetValue(AInstance).AsExtended;
@@ -389,10 +391,10 @@ begin
           else
           if AProperty.GetValue(AInstance).IsArray then
           begin
-            if EndsText('<System.String>', LTypeInfo.Name) then
+            if EndsText('<System.String>', String(LTypeInfo.Name)) then
               Result := DynArrayStringToJSON(AProperty.GetValue(AInstance))
             else
-            if EndsText('<System.Integer>', LTypeInfo.Name) then
+            if EndsText('<System.Integer>', String(LTypeInfo.Name)) then
               Result := DynArrayIntegerToJSON(AProperty.GetValue(AInstance))
             else
               Result := DynArrayDoubleToJSON(AProperty.GetValue(AInstance))
@@ -414,28 +416,27 @@ begin
     Result := nil;
   if not (ATypeInfo.Kind = tkDynArray) then
     Result := nil;
-  if not StartsText('TArray<', ATypeInfo.Name) then
+  if not StartsText('TArray<', String(ATypeInfo.Name)) then
     Result := nil;
 
   LValue := AValue;
   LValue := ReplaceStr(LValue, '[', '');
   LValue := ReplaceStr(LValue, ']', '');
   LValue := ReplaceStr(LValue, '"', '');
-//  LValue := ReplaceStr(LValue, '\', '');
-  if EndsText('<System.String>', ATypeInfo.Name) then
-    Result := TValue.From<TArray<String>>(ResolveValueArrayString(LValue))
+  if EndsText('<System.String>', String(ATypeInfo.Name)) then
+    Result := TValue.From(ResolveValueArrayString(LValue))
   else
-  if EndsText('<System.Integer>', ATypeInfo.Name) then
-    Result := TValue.From<TArray<Integer>>(ResolveValueArrayInteger(LValue))
+  if EndsText('<System.Integer>', String(ATypeInfo.Name)) then
+    Result := TValue.From(ResolveValueArrayInteger(LValue))
   else
-  if EndsText('<System.Int64>', ATypeInfo.Name) then
-    Result := TValue.From<TArray<Int64>>(ResolveValueArrayInt64(LValue))
+  if EndsText('<System.Int64>', String(ATypeInfo.Name)) then
+    Result := TValue.From(ResolveValueArrayInt64(LValue))
   else
-  if EndsText('<System.Double>', ATypeInfo.Name) then
-    Result := TValue.From<TArray<Double>>(ResolveValueArrayDouble(LValue))
+  if EndsText('<System.Double>', String(ATypeInfo.Name)) then
+    Result := TValue.From(ResolveValueArrayDouble(LValue))
   else
-  if EndsText('<System.Currency>', ATypeInfo.Name) then
-    Result := TValue.From<TArray<Currency>>(ResolveValueArrayCurrency(LValue));
+  if EndsText('<System.Currency>', String(ATypeInfo.Name)) then
+    Result := TValue.From(ResolveValueArrayCurrency(LValue));
 end;
 
 class procedure TJSONBrObject.SetInstanceProp(const AInstance: TObject;
@@ -482,7 +483,7 @@ begin
         if (LTypeInfo = TypeInfo(TDateTime)) or
            (LTypeInfo = TypeInfo(TDate)) or
            (LTypeInfo = TypeInfo(TTime)) then
-          AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue))
+          AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue, UseISO8601DateFormat))
         else
           AProperty.SetValue(AInstance, Double(AValue));
       tkVariant:
@@ -516,116 +517,77 @@ begin
   end;
 end;
 
-//class function TJSONBrObject.DateTimeToIso8601(const AValue: TDateTime): string;
-//begin
-//  if AValue = 0 then
-//    Result := ''
-//  else
-//  if Frac(AValue) = 0 then
-//    Result := FormatDateTime('yyyy"-"mm"-"dd', AValue)
-//  else
-//  if Trunc(AValue) = 0 then
-//    Result := FormatDateTime('"T"hh":"nn":"ss', AValue)
-//  else
-//    Result := FormatDateTime('yyyy"-"mm"-"dd"T"hh":"nn":"ss', AValue);
-//end;
-
 function TJSONBrObject.DynArrayDoubleToJSON(const AValue: TValue): String;
 var
   LFor: Integer;
   LValue: Double;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AValue.GetArrayLength -1 do
-  begin
-    LValue := AValue.GetArrayElement(LFor).AsExtended;
-    Result := Result + LValue.ToString;
-    if LFor < AValue.GetArrayLength - 1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AValue.GetArrayLength -1 do
+    begin
+      LValue := AValue.GetArrayElement(LFor).AsExtended;
+      LResultBuilder.Append(LValue.ToString);
+      if LFor < AValue.GetArrayLength - 1 then
+        LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 function TJSONBrObject.DynArrayIntegerToJSON(const AValue: TValue): String;
 var
   LFor: Integer;
   LValue: Integer;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AValue.GetArrayLength -1 do
-  begin
-    LValue := AValue.GetArrayElement(LFor).AsInteger;
-    Result := Result + LValue.ToString;
-    if LFor < AValue.GetArrayLength - 1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AValue.GetArrayLength -1 do
+    begin
+      LValue := AValue.GetArrayElement(LFor).AsInteger;
+      LResultBuilder.Append(LValue.ToString);
+      if LFor < AValue.GetArrayLength - 1 then
+        LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 function TJSONBrObject.DynArrayStringToJSON(const AValue: TValue): String;
 var
   LFor: Integer;
+  LResultBuilder: TStringBuilder;
 begin
-  Result := '[';
-  for LFor := 0 to AValue.GetArrayLength -1 do
-  begin
-//    Result := Result + '\"' + AValue.GetArrayElement(LFor).AsString + '\"';
-    Result := Result + '"' + AValue.GetArrayElement(LFor).AsString + '"';
-    if LFor < AValue.GetArrayLength -1 then
-      Result := Result + ', ';
+  LResultBuilder := TStringBuilder.Create;
+  try
+    LResultBuilder.Append('[');
+    for LFor := 0 to AValue.GetArrayLength -1 do
+    begin
+      LResultBuilder.Append('"' + AValue.GetArrayElement(LFor).AsString + '"');
+      if LFor < AValue.GetArrayLength -1 then
+        LResultBuilder.Append(', ');
+    end;
+    LResultBuilder.ReplaceLastChar(']');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result := Result + ']';
 end;
 
 class function TJSONBrObject.IsBlob(const ATypeInfo: PTypeInfo): Boolean;
 begin
   Result := (ATypeInfo = TypeInfo(TByteDynArray)) and
             (PropWrap(ATypeInfo).Kind = $FF);
-end;
-
-class function TJSONBrObject.Iso8601ToDateTime(const AValue: string): TDateTime;
-var
-  Y, M, D, HH, MI, SS: Cardinal;
-begin
-  // YYYY-MM-DD   Thh:mm:ss  or  YYYY-MM-DDThh:mm:ss
-  // 1234567890   123456789      1234567890123456789
-  Result := StrToDateTimeDef(AValue, 0);
-  case Length(AValue) of
-    9:
-      if (AValue[1] = 'T') and (AValue[4] = ':') and (AValue[7] = ':') then
-      begin
-        HH := Ord(AValue[2]) * 10 + Ord(AValue[3]) - (48 + 480);
-        MI := Ord(AValue[5]) * 10 + Ord(AValue[6]) - (48 + 480);
-        SS := Ord(AValue[8]) * 10 + Ord(AValue[9]) - (48 + 480);
-        if (HH < 24) and (MI < 60) and (SS < 60) then
-          Result := EncodeTime(HH, MI, SS, 0);
-      end;
-    10:
-      if (AValue[5] = AValue[8]) and (Ord(AValue[8]) in [Ord('-'), Ord('/')]) then
-      begin
-        Y := Ord(AValue[1]) * 1000 + Ord(AValue[2]) * 100 + Ord(AValue[3]) * 10 + Ord(AValue[4]) - (48 + 480 + 4800 + 48000);
-        M := Ord(AValue[6]) * 10 + Ord(AValue[7]) - (48 + 480);
-        D := Ord(AValue[9]) * 10 + Ord(AValue[10]) - (48 + 480);
-        if (Y <= 9999) and ((M - 1) < 12) and ((D - 1) < 31) then
-          Result := EncodeDate(Y, M, D);
-      end;
-    19,24:
-      if (AValue[5] = AValue[8]) and
-         (Ord(AValue[8]) in [Ord('-'), Ord('/')]) and
-         (Ord(AValue[11]) in [Ord(' '), Ord('T')]) and
-         (AValue[14] = ':') and
-         (AValue[17] = ':') then
-      begin
-        Y := Ord(AValue[1]) * 1000 + Ord(AValue[2]) * 100 + Ord(AValue[3]) * 10 + Ord(AValue[4]) - (48 + 480 + 4800 + 48000);
-        M := Ord(AValue[6]) * 10 + Ord(AValue[7]) - (48 + 480);
-        D := Ord(AValue[9]) * 10 + Ord(AValue[10]) - (48 + 480);
-        HH := Ord(AValue[12]) * 10 + Ord(AValue[13]) - (48 + 480);
-        MI := Ord(AValue[15]) * 10 + Ord(AValue[16]) - (48 + 480);
-        SS := Ord(AValue[18]) * 10 + Ord(AValue[19]) - (48 + 480);
-        if (Y <= 9999) and ((M - 1) < 12) and ((D - 1) < 31) and (HH < 24) and (MI < 60) and (SS < 60) then
-          Result := EncodeDate(Y, M, D) + EncodeTime(HH, MI, SS, 0);
-      end;
-  end;
 end;
 
 function TJSONBrObject.JSONToObjectList<T>(const AJson: String): TObjectList<T>;
@@ -685,6 +647,8 @@ var
   {$ENDIF DELPHI15_UP}
   LFor: Integer;
   LValue: TValue;
+  LStringBuilder: TStringBuilder;
+  LResultBuilder: TStringBuilder;
 begin
   LValue := nil;
   if AObject = nil then
@@ -692,47 +656,64 @@ begin
     Result := 'null';
     Exit;
   end;
-  if AObject.InheritsFrom(TList) then
+  if AObject is TList then
   begin
     if TList(AObject).Count = 0 then
       Result := '[]'
     else
     begin
-      Result := '[';
-      for LFor := 0 to TList(AObject).Count - 1 do
-        Result := Result +
-                  ObjectToJSON(TObject(TList(AObject).List[LFor]),
-                  AStoreClassName) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TList(AObject).Count - 1 do
+          LStringBuilder.Append(ObjectToJSON(TObject(TList(AObject).List[LFor]),
+                                AStoreClassName))
+                        .Append(',');
+        LStringBuilder.ReplaceLastChar(']');
+        Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
     Exit;
   end;
-  if AObject.InheritsFrom(TStrings) then
+  if AObject is TStrings then
   begin
     if TStrings(AObject).Count = 0 then
       Result := '[]'
     else
     begin
-      Result := '[';
-      for LFor := 0 to TStrings(AObject).Count - 1 do
-        Result := Result +
-                  StringToJSON(TStrings(AObject).Strings[LFor]) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TStrings(AObject).Count - 1 do
+          LStringBuilder.Append(StringToJSON(TStrings(AObject).Strings[LFor]))
+                        .Append(',');
+        LStringBuilder.ReplaceLastChar(']');
+        Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
     Exit;
   end;
-  if AObject.InheritsFrom(TCollection) then
+  if AObject is TCollection then
   begin
     if TCollection(AObject).Count = 0 then
       Result := '[]'
     else
     begin
-      Result := '[';
-      for LFor := 0 to TCollection(AObject).Count - 1 do
-        Result := Result +
-                  ObjectToJSON(TCollection(AObject).Items[LFor],
-                  AStoreClassName) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TCollection(AObject).Count - 1 do
+          LStringBuilder.Append(ObjectToJSON(TCollection(AObject).Items[LFor], AStoreClassName))
+                        .Append(',');
+        LStringBuilder.ReplaceLastChar(']');
+        Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
     Exit;
   end;
@@ -742,7 +723,6 @@ begin
     Result := 'null';
     Exit;
   end;
-
   if (Pos('TObjectList<', AObject.ClassName) > 0) or
      (Pos('TList<', AObject.ClassName) > 0) then
   begin
@@ -756,46 +736,65 @@ begin
         Result := '[]'
       else
       begin
-        Result := '[';
-        for LFor := 0 to LValue.GetArrayLength -1 do
-          Result := Result +
-                    ObjectToJSON(LValue.GetArrayElement(LFor).AsObject, AStoreClassName) + ',';
-         Result[Length(Result)] := ']';
-      end
+        LStringBuilder := TStringBuilder.Create;
+        try
+          LStringBuilder.Append('[');
+          for LFor := 0 to LValue.GetArrayLength -1 do
+            LStringBuilder.Append(ObjectToJSON(LValue.GetArrayElement(LFor).AsObject, AStoreClassName)).Append(',');
+          LStringBuilder.ReplaceLastChar(']');
+          Result := LStringBuilder.ToString;
+        finally
+          LStringBuilder.Free;
+        end;
+      end;
+      Exit;
     end;
     {$ELSE DELPHI15_UP}
     if TList(AObject).Count = 0 then
-      Result := '[]'
+      Result := '[]';
     else
     begin
-      Result := '[';
-      for LFor := 0 to TList(AObject).Count -1 do
-        Result := Result +
-                  ObjectToJSON(TList(AObject).Items[LFor], AStoreClassName) + ',';
-      Result[Length(Result)] := ']';
+      LStringBuilder := TStringBuilder.Create;
+      try
+        LStringBuilder.Append('[');
+        for LFor := 0 to TList(AObject).Count -1 do
+            LStringBuilder.Append(ObjectToJSON(TList(AObject).Items[LFor], AStoreClassName)).Append(',');
+          LStringBuilder.ReplaceLastChar(']');
+          Result := LStringBuilder.ToString;
+      finally
+        LStringBuilder.Free;
+      end;
     end;
-    {$ENDIF DELPHI15_UP}
     Exit;
+    {$ENDIF DELPHI15_UP}
   end;
+  LResultBuilder := TStringBuilder.Create;
+  try
+    if AStoreClassName then
+      LResultBuilder.Append('{"ClassName":"' + AObject.ClassName + '",')
+    else
+      LResultBuilder.Append('{');
 
-  if AStoreClassName then
-    Result := '{"ClassName":"' + AObject.ClassName + '",'
-  else
-    Result := '{';
-
-  for LProperty in LTypeInfo.GetProperties do
-  begin
-    if LProperty.IsWritable then
+    for LProperty in LTypeInfo.GetProperties do
     begin
-      if StartsText('TArray<', LProperty.PropertyType.Name) then
-        Result := Result + StringToJSON(LProperty.Name) + ':' +
-                           GetInstanceProp(AObject, LProperty) + ','
+      if (not LProperty.IsWritable) then
+        Continue;
+      if LProperty.PropertyType.TypeKind = tkArray then
+        LResultBuilder.Append(StringToJSON(LProperty.Name))
+                      .Append(':')
+                      .Append(String(GetInstanceProp(AObject, LProperty)))
+                      .Append(',')
       else
-        Result := Result + StringToJSON(LProperty.Name) + ':' +
-                           ValueToJSON(GetInstanceProp(AObject, LProperty)) + ',';
+        LResultBuilder.Append(StringToJSON(LProperty.Name))
+                      .Append(':')
+                      .Append(ValueToJSON(GetInstanceProp(AObject, LProperty)))
+                      .Append(',');
     end;
+    LResultBuilder.ReplaceLastChar('}');
+    Result := LResultBuilder.ToString;
+  finally
+    LResultBuilder.Free;
   end;
-  Result[Length(Result)] := '}';
 end;
 
 class function TJSONBrObject.ResolveValueArrayString(const AValue: Variant): TArray<String>;
@@ -828,7 +827,7 @@ begin
     ExtractStrings([','], [' '], PChar(String(LValue)), LSplitList);
     SetLength(Result, LSplitList.Count);
     for LFor := 0 to LSplitList.Count -1 do
-      Result[LFor] := StrToCurr(LSplitList[LFor], FormatSettings);
+      Result[LFor] := StrToCurr(LSplitList[LFor], JsonBrFormatSettings);
   finally
     LSplitList.Free;
   end;
@@ -846,7 +845,7 @@ begin
     ExtractStrings([','], [' '], PChar(String(LValue)), LSplitList);
     SetLength(Result, LSplitList.Count);
     for LFor := 0 to LSplitList.Count -1 do
-      Result[LFor] := StrToFloat(LSplitList[LFor], FormatSettings);
+      Result[LFor] := StrToFloat(LSplitList[LFor], JsonBrFormatSettings);
   finally
     LSplitList.Free;
   end;
@@ -1360,6 +1359,7 @@ end;
 function TJSONBrVariantData.ToJSON: String;
 var
   LFor: Integer;
+  LResultBuilder: TStringBuilder;
 begin
   case FVKind of
     vkObject:
@@ -1367,23 +1367,36 @@ begin
         Result := '{}'
       else
       begin
-        Result := '{';
-        for LFor := 0 to FVCount - 1 do
-          Result := Result +
-                    TJSONBrObject.StringToJSON(FNames[LFor]) + ':' +
-                    TJSONBrObject.ValueToJSON(FValues[LFor]) + ',';
-        Result[Length(Result)] := '}';
+        LResultBuilder := TStringBuilder.Create;
+        try
+          LResultBuilder.Append('{');
+          for LFor := 0 to FVCount - 1 do
+            LResultBuilder.Append(TJSONBrObject.StringToJSON(FNames[LFor]))
+                          .Append(':')
+                          .Append(TJSONBrObject.ValueToJSON(FValues[LFor]))
+                          .Append(',');
+          LResultBuilder.ReplaceLastChar('}');
+          Result := LResultBuilder.ToString;
+        finally
+          LResultBuilder.Free;
+        end;
       end;
     vkArray:
       if FVCount = 0 then
         Result := '[]'
       else
       begin
-        Result := '[';
-        for LFor := 0 to FVCount - 1 do
-          Result := Result +
-                    TJSONBrObject.ValueToJSON(FValues[LFor]) + ',';
-        Result[Length(Result)] := ']';
+        LResultBuilder := TStringBuilder.Create;
+        try
+          LResultBuilder.Append('[');
+          for LFor := 0 to FVCount - 1 do
+            LResultBuilder.Append(TJSONBrObject.ValueToJSON(FValues[LFor]))
+                          .Append(',');
+          LResultBuilder.ReplaceLastChar(']');
+          Result := LResultBuilder.ToString;
+        finally
+          LResultBuilder.Free;
+        end;
       end;
   else
     Result := 'null';
@@ -1397,7 +1410,6 @@ var
   LItem: TCollectionItem;
   LListType: TRttiType;
   LProperty: TRttiProperty;
-  LMethod: TRttiMethod;
   LObjectType: TObject;
 
   function MethodCall(const AObject: TObject; const AMethodName: string;
@@ -1547,12 +1559,20 @@ begin
   Result := True;
 end;
 
+procedure TStringBuilderHelper.ReplaceLastChar(const AChar: Char);
+begin
+  if Self.Length > 1 then
+  begin
+    // Remove espaço final vazio
+    if Self.Chars[Self.Length - 1] = ' ' then
+      Self.Remove(Self.Length - 1, 1);
+    // Troca o último caracter
+    Self.Chars[Self.Length - 1] := AChar;
+  end;
+end;
+
 initialization
   JSONVariantType := TJSONVariant.Create;
-  {$IFDEF FORMATSETTINGS}
-  TJSONBrObject.FormatSettings := TFormatSettings.Create('en_US');
-  {$ELSE FORMATSETTINGS}
-  GetLocaleFormatSettings($0409, TJSONBrObject.FormatSettings);
-  {$ENDIF FORMATSETTINGS}
+  TJSONBrObject.UseISO8601DateFormat := True;
 
 end.

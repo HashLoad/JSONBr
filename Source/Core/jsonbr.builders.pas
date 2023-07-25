@@ -15,7 +15,8 @@
        arquivo LICENSE na pasta principal.
 }
 
-{ @abstract(JSONBr Framework.)
+{
+  @abstract(JSONBr Framework.)
   @created(23 Nov 2020)
   @author(Isaque Pinheiro <isaquepsp@gmail.com>)
   @author(Telegram : @IsaquePinheiro)
@@ -44,179 +45,172 @@ type
     procedure ReplaceLastChar(const AChar: Char);
   end;
 
-  TJSONBrObject = class;
+  TJsonBrObject = class;
   TNotifyEventGetValue = procedure(const AInstance: TObject;
-								   const AProperty: TRttiProperty;
-								   var AResult: Variant;
-								   var ABreak: Boolean) of Object;
+                                   const AProperty: TRttiProperty;
+                                   var AResult: Variant;
+                                   var ABreak: boolean) of Object;
   TNotifyEventSetValue = procedure(const AInstance: TObject;
                                    const AProperty: TRttiProperty;
-								   const AValue: Variant;
-								   var ABreak: Boolean) of Object;
-  EJSONBrException = class(Exception);
-  TStringDynamicArray = array of String;
-  TVariantDynamicArray = array of Variant;
-  TJSONBrVariantKind = (vkUndefined, vkObject, vkArray);
-  TJSONBrParserKind = (pkNone, pkNull, pkFalse, pkTrue, pkString,
-                       pkInteger, pkFloat, pkObject, pkArray);
+                                   const AValue: Variant;
+                                   var ABreak: boolean) of Object;
+  EJsonBrException = class(Exception);
+  TDynamicArrayKey = array of string;
+  TDynamicArrayValue = array of Variant;
+  TJsonTypeKind = (jtkUndefined, jtkObject, jtkArray);
+  TJsonValueKind = (jvkNone, jvkNull, jvkString, jvkInteger, jvkFloat,
+                    jvkObject, jvkArray, jvkBoolean);
   PropWrap = packed record
-    FillBytes: array [0..SizeOf(Pointer)-2] of Byte;
-    Kind: Byte;
+    FillBytes: array [0..SizeOf(pointer)-2] of byte;
+    Kind: byte;
   end;
 
-  TJSONBrVariantData = record
+  TJsonData = record
   private
     FVType: TVarType;
-    FVKind: TJSONBrVariantKind;
-    FVCount: Integer;
-    function GetKind: TJSONBrVariantKind;
-    procedure SetKind(const Value: TJSONBrVariantKind);
-    function GetCount: Integer;
-    function GetVarData(const AName: String; var ADest: TVarData): Boolean;
-    function GetValueCopy(const AName: String): Variant;
-    function GetValue(const AName: String): Variant;
-    procedure SetValue(const AName: String; const AValue: Variant);
-    function GetItem(AIndex: Integer): Variant;
-    procedure SetItem(AIndex: Integer; const AItem: Variant);
+    FVKind: TJsonTypeKind;
+    FVCount: integer;
+    FNames: TDynamicArrayKey;
+    FValues: TDynamicArrayValue;
+    procedure SetKind(const Value: TJsonTypeKind);
+    procedure SetValue(const AName: string; const AValue: Variant);
+    procedure SetItem(AIndex: integer; const AItem: Variant);
+    function GetKind: TJsonTypeKind;
+    function GetCount: integer;
+    function GetVarData(const AName: string; var ADest: TVarData): boolean;
+    function GetValueCopy(const AName: string): Variant;
+    function GetValue(const AName: string): Variant;
+    function GetItem(AIndex: integer): Variant;
     function GetListType(LRttiType: TRttiType): TRttiType;
+    function GetDataType: TJsonValueKind;
     type
-      TJSONBrParser = record
+      TJsonParser = record
       private
-        FJson: String;
-        FIndex: Integer;
-        FJsonLength: Integer;
-        procedure Init(const AJson: String; AIndex: Integer);
-        function GetNextChar: Char; inline;
+        FJson: string;
+        FIndex: integer;
+        FJsonLength: integer;
+        function GetNextChar: Char;
         function GetNextNonWhiteChar: Char; inline;
-        function CheckNextNonWhiteChar(AChar: Char): Boolean; inline;
-        function GetNextString(out AStr: String): Boolean; overload;
-        function GetNextString: String; overload; inline;
-        function GetNextJSON(out AValue: Variant): TJSONBrParserKind;
-        function CheckNextIdent(const AExpectedIdent: string): Boolean;
-        function GetNextAlphaPropName(out AFieldName: string): Boolean;
-        function ParseJSONObject(out AData: TJSONBrVariantData): Boolean;
-        function ParseJSONArray(out AData: TJSONBrVariantData): Boolean;
-        function CopyIndex: Integer;
+        function CheckNextNonWhiteChar(AChar: Char): boolean; inline;
+        function GetNextString(out AStr: string): boolean;
+        function GetNextJson(out AValue: Variant): TJsonValueKind;
+        function GetNextAlphaPropName(out AFieldName: string): boolean;
+        function ParseJsonObject(out AData: TJsonData): boolean;
+        function ParseJsonArray(out AData: TJsonData): boolean;
+        procedure Init(const AJson: string; AIndex: integer = 1);
         procedure GetNextStringUnEscape(var AStr: string);
       end;
   public
-    FNames: TStringDynamicArray;
-    FValues: TVariantDynamicArray;
+    function NameIndex(const AName: string): integer;
+    function FromJson(const AJson: string): boolean;
+    function ToJson: string;
+    function ToObject(AObject: TObject): boolean;
+    function Names: TDynamicArrayKey;
+    function Values: TDynamicArrayValue;
     procedure Init; overload;
-    procedure Init(const AJson: String); overload;
-    procedure InitFrom(const AValues: TVariantDynamicArray); overload;
+    procedure Init(const AJson: string); overload;
+    procedure InitFrom(const AValues: TDynamicArrayValue); overload;
     procedure Clear;
-    function NameIndex(const AName: String): Integer;
-    function FromJSON(const AJson: String): Boolean;
-    function ToJSON: String;
-    function ToObject(AObject: TObject): Boolean;
     procedure AddValue(const AValue: Variant);
-    procedure AddNameValue(const AName: String; const AValue: Variant);
-    property Kind: TJSONBrVariantKind read GetKind write SetKind;
-    property Count: Integer read GetCount;
-    property Value[const AName: String]: Variant read GetValue write SetValue; default;
-    property ValueCopy[const AName: String]: Variant read GetValueCopy;
-    property Item[AIndex: Integer]: Variant read GetItem write SetItem;
+    procedure AddNameValue(const AName: string; const AValue: Variant);
+    property Kind: TJsonTypeKind read GetKind write SetKind;
+    property DataType: TJsonValueKind read GetDataType;
+    property Count: integer read GetCount;
+    property Value[const AName: string]: Variant read GetValue write SetValue; default;
+    property ValueCopy[const AName: string]: Variant read GetValueCopy;
+    property Item[AIndex: integer]: Variant read GetItem write SetItem;
   end;
 
-  TJSONVariant = class(TInvokeableVariantType)
+  TJsonVariant = class(TInvokeableVariantType)
   public
     procedure Copy(var ADest: TVarData; const ASource: TVarData;
-      const AIndirect: Boolean); override;
+      const AIndirect: boolean); override;
     procedure Clear(var AVarData: TVarData); override;
     function GetProperty(var ADest: TVarData; const AVarData: TVarData;
-      const AName: String): Boolean; override;
-    function SetProperty(const AVarData: TVarData; const AName: String;
-      const AValue: TVarData): Boolean; override;
+      const AName: string): boolean; override;
+    function SetProperty(const AVarData: TVarData; const AName: string;
+      const AValue: TVarData): boolean; override;
     procedure Cast(var ADest: TVarData; const ASource: TVarData); override;
     procedure CastTo(var ADest: TVarData; const ASource: TVarData;
       const AVarType: TVarType); override;
   end;
 
-  TJSONBrObject = class
+  TJsonBrObject = class
   private
     class var FNotifyEventSetValue: TNotifyEventSetValue;
     class var FNotifyEventGetValue: TNotifyEventGetValue;
   private
     function GetInstanceProp(AInstance: TObject; AProperty: TRttiProperty): Variant;
-    class function ResolveValueArrayString(const AValue: Variant): TArray<String>;
-    class function ResolveValueArrayInteger(const AValue: Variant): TArray<Integer>;
-    class function ResolveValueArrayInt64(const AValue: Variant): TArray<Int64>;
-    class function ResolveValueArrayDouble(const AValue: Variant): TArray<Double>;
-    class function ResolveValueArrayCurrency(const AValue: Variant): TArray<Currency>;
-
+    class function ResolveValueArrayString(const AValue: Variant): TArray<string>;
+    class function ResolveValueArrayInteger(const AValue: Variant): TArray<integer>;
+    class function ResolveValueArrayInt64(const AValue: Variant): TArray<int64>;
+    class function ResolveValueArrayDouble(const AValue: Variant): TArray<double>;
+    class function ResolveValueArrayCurrency(const AValue: Variant): TArray<currency>;
+    class function IsBlob(const ATypeInfo: PTypeInfo): boolean;
+    class function GetValueArray(const ATypeInfo: PTypeInfo; const AValue: Variant): TValue;
+    class function JsonVariantData(const AValue: Variant): TJsonData;
     class procedure SetInstanceProp(const AInstance: TObject; const AProperty:
       TRttiProperty; const AValue: Variant);
-    class function IsBlob(const ATypeInfo: PTypeInfo): Boolean;
-    class function GetValueArray(const ATypeInfo: PTypeInfo; const AValue: Variant): TValue;
-    class function JSONVariantData(const AValue: Variant): TJSONBrVariantData;
-    class procedure AppendChar(var AStr: string; AChr: char);
   public
-    class var UseISO8601DateFormat: Boolean;
-    function ObjectToJSON(const AObject: TObject; const AStoreClassName: Boolean = False): String;
-    function DynArrayStringToJSON(const AValue: TValue): String;
-    function DynArrayIntegerToJSON(const AValue: TValue): String;
-    function DynArrayDoubleToJSON(const AValue: TValue): String;
-    function JSONVariant(const AValues: TVariantDynamicArray): Variant; overload;
-    function JSONVariant(const AJson: String): Variant; overload;
-    function JSONToObject(AObject: TObject; const AJson: String): Boolean; overload;
-    function JSONToObject<T: class, constructor>(const AJson: String): T; overload;
-    function JSONToObjectList<T: class, constructor>(const AJson: String): TObjectList<T>;
-
-    class function StringToJSON(const AText: string): string;
-    class function ValueToJSON(const AValue: Variant): string;
+    class var UseISO8601DateFormat: boolean;
+    function ObjectToJson(const AObject: TObject; const AStoreClassName: boolean = false): string;
+    function DynArrayStringToJson(const AValue: TValue): string;
+    function DynArrayIntegerToJson(const AValue: TValue): string;
+    function DynArrayDoubleToJson(const AValue: TValue): string;
+    function JsonVariant(const AValues: TDynamicArrayValue): Variant; overload;
+    function JsonVariant(const AJson: string): Variant; overload;
+    function JsonToObject(AObject: TObject; const AJson: string): boolean; overload;
+    function JsonToObject<T: class, constructor>(const AJson: string): T; overload;
+    function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>;
+    class function StringToJson(const AText: string): string;
+    class function ValueToJson(const AValue: Variant): string;
     class property OnSetValue: TNotifyEventSetValue read FNotifyEventSetValue write FNotifyEventSetValue;
     class property OnGetValue: TNotifyEventGetValue read FNotifyEventGetValue write FNotifyEventGetValue;
   end;
 
 var
-  JSONVariantType: TInvokeableVariantType;
+  JsonVariantType: TInvokeableVariantType;
 
 implementation
 
-{ TJSONBrObject }
+{ TJsonBrObject }
 
-function TJSONBrObject.JSONVariant(const AJson: String): Variant;
+function TJsonBrObject.JsonVariant(const AJson: String): Variant;
 begin
   VarClear(Result);
-  TJSONBrVariantData(Result).FromJSON(AJson);
+  TJsonData(Result).FromJson(AJson);
 end;
 
-function TJSONBrObject.JSONVariant(const AValues: TVariantDynamicArray): Variant;
+function TJsonBrObject.JsonVariant(const AValues: TDynamicArrayValue): Variant;
 begin
   VarClear(Result);
-  TJSONBrVariantData(Result).Init;
-  TJSONBrVariantData(Result).FVKind := vkArray;
-  TJSONBrVariantData(Result).FVCount := Length(AValues);
-  TJSONBrVariantData(Result).FValues := AValues;
+  TJsonData(Result).Init;
+  TJsonData(Result).FVKind := jtkArray;
+  TJsonData(Result).FVCount := Length(AValues);
+  TJsonData(Result).FValues := AValues;
 end;
 
-class function TJSONBrObject.JSONVariantData(const AValue: Variant): TJSONBrVariantData;
-begin
-  with TVarData(AValue) do
-  begin
-    if VType = JSONVariantType.VarType then
-      Result := TJSONBrVariantData(AValue)
-    else
-    if VType = varByRef or varVariant then
-      Result := TJSONBrVariantData(PVariant(VPointer)^)
-    else
-      raise EJSONBrException.CreateFmt('JSONBrVariantData.Data(%d<>JSONVariant)', [VType]);
-  end;
-end;
-
-class procedure TJSONBrObject.AppendChar(var AStr: String; AChr: Char);
-begin
-  AStr := AStr + String(AChr);
-end;
-
-class function TJSONBrObject.StringToJSON(const AText: String): String;
+class function TJsonBrObject.JsonVariantData(const AValue: Variant): TJsonData;
 var
-  LLen, LFor: Integer;
+  LVarData: TVarData;
+begin
+  LVarData := TVarData(AValue);
+  if LVarData.VType = JsonVariantType.VarType then
+    Result := TJsonData(AValue)
+  else
+  if LVarData.VType = varByRef or varVariant then
+    Result := TJsonData(PVariant(LVarData.VPointer)^)
+  else
+    raise EJsonBrException.CreateFmt('JSONBrVariantData.Data(%d<>JSONVariant)', [LVarData.VType]);
+end;
+
+class function TJsonBrObject.StringToJson(const AText: string): String;
+var
+  LLen, LFor: integer;
 
   procedure DoEscape;
   var
-    LChr: Integer;
+    LChr: integer;
     LResultBuilder: TStringBuilder;
   begin
     LResultBuilder := TStringBuilder.Create;
@@ -256,24 +250,23 @@ begin
       #0 .. #31, '\', '"':
       begin
         DoEscape;
-        Exit;
+        exit;
       end;
     end;
-  Result := AnsiQuotedStr(AText, '"');
+  Result := '"' + AText + '"';
 end;
 
-class function TJSONBrObject.ValueToJSON(const AValue: Variant): String;
+class function TJsonBrObject.ValueToJson(const AValue: Variant): string;
 var
-  LInt64: Int64;
-  LDouble: Double;
+  LDouble: double;
 begin
-  if TVarData(AValue).VType = JSONVariantType.VarType then
-    Result := TJSONBrVariantData(AValue).ToJSON
+  if TVarData(AValue).VType = JsonVariantType.VarType then
+    Result := TJsonData(AValue).ToJson
   else
   begin
     case TVarData(AValue).VType of
       varByRef, varVariant:
-        Result := ValueToJSON(PVariant(TVarData(AValue).VPointer)^);
+        Result := ValueToJson(PVariant(TVarData(AValue).VPointer)^);
       varNull:
         Result := 'null';
       varBoolean:
@@ -284,12 +277,11 @@ begin
             Result := 'false';
         end;
       varDate:
-        Result := AnsiQuotedStr(DateTimeToIso8601(TVarData(AValue).VDouble, UseISO8601DateFormat), '"');
+        Result := '"' + DateTimeToIso8601(TVarData(AValue).VDouble, UseISO8601DateFormat) + '"';
     else
       if VarIsOrdinal(AValue) then
       begin
-        LInt64 := AValue;
-        Result := IntToStr(LInt64);
+        Result := VarToStr(AValue);
       end
       else
       if VarIsFloat(AValue) then
@@ -299,21 +291,21 @@ begin
       end
       else
       if VarIsStr(AValue) then
-        Result :=  StringToJSON(VarToStr(AValue))
+        Result :=  StringToJson(VarToStr(AValue))
       else
         Result := VarToStr(AValue);
     end;
   end;
 end;
 
-function TJSONBrObject.GetInstanceProp(AInstance: TObject;
+function TJsonBrObject.GetInstanceProp(AInstance: TObject;
   AProperty: TRttiProperty): Variant;
 var
   LObject: TObject;
   LTypeInfo: PTypeInfo;
-  LBreak: Boolean;
+  LBreak: boolean;
 
-  function IsBoolean: Boolean;
+  function IsBoolean: boolean;
   var
     LTypeName: string;
   begin
@@ -326,10 +318,10 @@ begin
   // Notify Event
   if Assigned(FNotifyEventGetValue) then
   begin
-    LBreak := False;
+    LBreak := false;
     FNotifyEventGetValue(AInstance, AProperty, Result, LBreak);
     if LBreak then
-      Exit;
+      exit;
   end;
 
   LTypeInfo := AProperty.PropertyType.Handle;
@@ -349,9 +341,8 @@ begin
             end;
           ftDouble:
             begin
-              if (LTypeInfo = TypeInfo(TDateTime)) or
-                 (LTypeInfo = TypeInfo(TDate))     or
-                 (LTypeInfo = TypeInfo(TTime))     then
+              if (LTypeInfo = TypeInfo(TDateTime)) or (LTypeInfo = TypeInfo(TDate)) or
+                 (LTypeInfo = TypeInfo(TTime)) then
               begin
                 Result := DateTimeToIso8601(AProperty.GetValue(AInstance).AsExtended, UseISO8601DateFormat);
               end
@@ -373,7 +364,7 @@ begin
         begin
           LObject := AProperty.GetValue(AInstance).AsObject;
           if LObject <> nil then
-            TJSONBrVariantData(Result).Init(ObjectToJSON(LObject))
+            TJsonData(Result).Init(ObjectToJson(LObject))
           else
             Result := Null;
         end;
@@ -392,12 +383,12 @@ begin
           if AProperty.GetValue(AInstance).IsArray then
           begin
             if EndsText('<System.String>', String(LTypeInfo.Name)) then
-              Result := DynArrayStringToJSON(AProperty.GetValue(AInstance))
+              Result := DynArrayStringToJson(AProperty.GetValue(AInstance))
             else
             if EndsText('<System.Integer>', String(LTypeInfo.Name)) then
-              Result := DynArrayIntegerToJSON(AProperty.GetValue(AInstance))
+              Result := DynArrayIntegerToJson(AProperty.GetValue(AInstance))
             else
-              Result := DynArrayDoubleToJSON(AProperty.GetValue(AInstance))
+              Result := DynArrayDoubleToJson(AProperty.GetValue(AInstance))
           end;
         end;
     end;
@@ -407,46 +398,41 @@ begin
   end;
 end;
 
-class function TJSONBrObject.GetValueArray(const ATypeInfo: PTypeInfo;
+class function TJsonBrObject.GetValueArray(const ATypeInfo: PTypeInfo;
   const AValue: Variant): TValue;
 var
-  LValue: Variant;
+  LValue: string;
 begin
-  if not Assigned(ATypeInfo) then
-    Result := nil;
-  if not (ATypeInfo.Kind = tkDynArray) then
-    Result := nil;
-  if not StartsText('TArray<', String(ATypeInfo.Name)) then
-    Result := nil;
+  Result := nil;
 
-  LValue := AValue;
-  LValue := ReplaceStr(LValue, '[', '');
-  LValue := ReplaceStr(LValue, ']', '');
-  LValue := ReplaceStr(LValue, '"', '');
-  if EndsText('<System.String>', String(ATypeInfo.Name)) then
+  if not Assigned(ATypeInfo) or (ATypeInfo.Kind <> tkDynArray) then
+    Exit;
+
+  LValue := VarToStr(AValue);
+  LValue := StringReplace(LValue, '[', '', [rfReplaceAll]);
+  LValue := StringReplace(LValue, ']', '', [rfReplaceAll]);
+  LValue := StringReplace(LValue, '"', '', [rfReplaceAll]);
+
+  if EndsText('<System.String>', string(ATypeInfo.Name)) then
     Result := TValue.From(ResolveValueArrayString(LValue))
-  else
-  if EndsText('<System.Integer>', String(ATypeInfo.Name)) then
+  else if EndsText('<System.Integer>', string(ATypeInfo.Name)) then
     Result := TValue.From(ResolveValueArrayInteger(LValue))
-  else
-  if EndsText('<System.Int64>', String(ATypeInfo.Name)) then
+  else if EndsText('<System.Int64>', string(ATypeInfo.Name)) then
     Result := TValue.From(ResolveValueArrayInt64(LValue))
-  else
-  if EndsText('<System.Double>', String(ATypeInfo.Name)) then
+  else if EndsText('<System.Double>', string(ATypeInfo.Name)) then
     Result := TValue.From(ResolveValueArrayDouble(LValue))
-  else
-  if EndsText('<System.Currency>', String(ATypeInfo.Name)) then
+  else if EndsText('<System.Currency>', string(ATypeInfo.Name)) then
     Result := TValue.From(ResolveValueArrayCurrency(LValue));
 end;
 
-class procedure TJSONBrObject.SetInstanceProp(const AInstance: TObject;
+class procedure TJsonBrObject.SetInstanceProp(const AInstance: TObject;
   const AProperty: TRttiProperty; const AValue: Variant);
 var
-  LBreak: Boolean;
+  LBreak: boolean;
   LTypeInfo: PTypeInfo;
   LObject: TObject;
 
-  function IsBoolean: Boolean;
+  function IsBoolean: boolean;
   var
     LTypeName: string;
   begin
@@ -456,36 +442,35 @@ var
 
 begin
   if (AProperty = nil) and (AInstance = nil) then
-    Exit;
+    exit;
   // Notify Event
   if Assigned(FNotifyEventSetValue) then
   begin
-    LBreak := False;
+    LBreak := false;
     FNotifyEventSetValue(AInstance, AProperty, AValue, LBreak);
     if LBreak then
-      Exit;
+      exit;
   end;
-
   LTypeInfo := AProperty.PropertyType.Handle;
   try
     case AProperty.PropertyType.TypeKind of
       tkString, tkWString, tkUString, tkWChar, tkLString, tkChar:
         if TVarData(AValue).VType <= varNull then
-          AProperty.SetValue(AInstance, '')
+          AProperty.SetValue(AInstance, TValue.From<string>(''))
         else
-          AProperty.SetValue(AInstance, String(AValue));
+          AProperty.SetValue(AInstance, TValue.From<string>(AValue));
       tkInteger, tkSet, tkInt64:
-        AProperty.SetValue(AInstance, Integer(AValue));
+        AProperty.SetValue(AInstance, TValue.From<integer>(AValue));
       tkFloat:
         if TVarData(AValue).VType <= varNull then
-          AProperty.SetValue(AInstance, 0)
+          AProperty.SetValue(AInstance, TValue.From<double>(0.0))
         else
         if (LTypeInfo = TypeInfo(TDateTime)) or
            (LTypeInfo = TypeInfo(TDate)) or
            (LTypeInfo = TypeInfo(TTime)) then
           AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue, UseISO8601DateFormat))
         else
-          AProperty.SetValue(AInstance, Double(AValue));
+          AProperty.SetValue(AInstance, TValue.From<double>(AValue));
       tkVariant:
         AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
       tkRecord:
@@ -494,12 +479,12 @@ begin
         begin
           LObject := AProperty.GetValue(AInstance).AsObject;
           if LObject <> nil then
-            JSONVariantData(AValue).ToObject(LObject);
+            JsonVariantData(AValue).ToObject(LObject);
         end;
       tkEnumeration:
         begin
           if IsBoolean() then
-            AProperty.SetValue(AInstance, Boolean(AValue))
+            AProperty.SetValue(AInstance, TValue.From<boolean>(AValue))
           else
             AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
         end;
@@ -517,10 +502,10 @@ begin
   end;
 end;
 
-function TJSONBrObject.DynArrayDoubleToJSON(const AValue: TValue): String;
+function TJsonBrObject.DynArrayDoubleToJson(const AValue: TValue): String;
 var
-  LFor: Integer;
-  LValue: Double;
+  LFor: integer;
+  LValue: double;
   LResultBuilder: TStringBuilder;
 begin
   LResultBuilder := TStringBuilder.Create;
@@ -533,17 +518,17 @@ begin
       if LFor < AValue.GetArrayLength - 1 then
         LResultBuilder.Append(', ');
     end;
-    LResultBuilder.ReplaceLastChar(']');
+    LResultBuilder.Append(']');
     Result := LResultBuilder.ToString;
   finally
     LResultBuilder.Free;
   end;
 end;
 
-function TJSONBrObject.DynArrayIntegerToJSON(const AValue: TValue): String;
+function TJsonBrObject.DynArrayIntegerToJson(const AValue: TValue): String;
 var
-  LFor: Integer;
-  LValue: Integer;
+  LFor: integer;
+  LValue: integer;
   LResultBuilder: TStringBuilder;
 begin
   LResultBuilder := TStringBuilder.Create;
@@ -556,16 +541,16 @@ begin
       if LFor < AValue.GetArrayLength - 1 then
         LResultBuilder.Append(', ');
     end;
-    LResultBuilder.ReplaceLastChar(']');
+    LResultBuilder.Append(']');
     Result := LResultBuilder.ToString;
   finally
     LResultBuilder.Free;
   end;
 end;
 
-function TJSONBrObject.DynArrayStringToJSON(const AValue: TValue): String;
+function TJsonBrObject.DynArrayStringToJson(const AValue: TValue): String;
 var
-  LFor: Integer;
+  LFor: integer;
   LResultBuilder: TStringBuilder;
 begin
   LResultBuilder := TStringBuilder.Create;
@@ -577,27 +562,27 @@ begin
       if LFor < AValue.GetArrayLength -1 then
         LResultBuilder.Append(', ');
     end;
-    LResultBuilder.ReplaceLastChar(']');
+    LResultBuilder.Append(']');
     Result := LResultBuilder.ToString;
   finally
     LResultBuilder.Free;
   end;
 end;
 
-class function TJSONBrObject.IsBlob(const ATypeInfo: PTypeInfo): Boolean;
+class function TJsonBrObject.IsBlob(const ATypeInfo: PTypeInfo): boolean;
 begin
   Result := (ATypeInfo = TypeInfo(TByteDynArray)) and
             (PropWrap(ATypeInfo).Kind = $FF);
 end;
 
-function TJSONBrObject.JSONToObjectList<T>(const AJson: String): TObjectList<T>;
+function TJsonBrObject.JsonToObjectList<T>(const AJson: String): TObjectList<T>;
 var
-  LDoc: TJSONBrVariantData;
+  LDoc: TJsonData;
   LItem: TObject;
-  LFor: Integer;
+  LFor: integer;
 begin
   LDoc.Init(AJson);
-  if (LDoc.FVKind <> vkArray) then
+  if (LDoc.FVKind <> jtkArray) then
     Result := nil
   else
   begin
@@ -606,22 +591,22 @@ begin
     for LFor := 0 to LDoc.Count - 1 do
     begin
       LItem := T.Create;
-      if not JSONVariantData(LDoc.FValues[LFor]).ToObject(LItem) then
+      if not JsonVariantData(LDoc.FValues[LFor]).ToObject(LItem) then
       begin
         FreeAndNil(Result);
-        Exit;
+        exit;
       end;
       Result.Add(LItem);
     end;
   end;
 end;
 
-function TJSONBrObject.JSONToObject(AObject: TObject; const AJson: String): Boolean;
+function TJsonBrObject.JsonToObject(AObject: TObject; const AJson: String): boolean;
 var
-  LDoc: TJSONBrVariantData;
+  LDoc: TJsonData;
 begin
   if AObject = nil then
-    Result := False
+    Result := false
   else
   begin
     LDoc.Init(AJson);
@@ -629,15 +614,15 @@ begin
   end;
 end;
 
-function TJSONBrObject.JSONToObject<T>(const AJson: String): T;
+function TJsonBrObject.JsonToObject<T>(const AJson: String): T;
 begin
   Result := T.Create;
-  if not JSONToObject(TObject(Result), AJson) then
+  if not JsonToObject(TObject(Result), AJson) then
     raise Exception.Create('Error JSON to Object');
 end;
 
-function TJSONBrObject.ObjectToJSON(const AObject: TObject;
-  const AStoreClassName: Boolean = False): String;
+function TJsonBrObject.ObjectToJson(const AObject: TObject;
+  const AStoreClassName: boolean = false): string;
 var
   FContext: TRttiContext;
   LTypeInfo: TRttiType;
@@ -645,7 +630,7 @@ var
   {$IFDEF DELPHI15_UP}
   LMethodToArray: TRttiMethod;
   {$ENDIF DELPHI15_UP}
-  LFor: Integer;
+  LFor: integer;
   LValue: TValue;
   LStringBuilder: TStringBuilder;
   LResultBuilder: TStringBuilder;
@@ -654,7 +639,7 @@ begin
   if AObject = nil then
   begin
     Result := 'null';
-    Exit;
+    exit;
   end;
   if AObject is TList then
   begin
@@ -666,16 +651,19 @@ begin
       try
         LStringBuilder.Append('[');
         for LFor := 0 to TList(AObject).Count - 1 do
-          LStringBuilder.Append(ObjectToJSON(TObject(TList(AObject).List[LFor]),
-                                AStoreClassName))
-                        .Append(',');
-        LStringBuilder.ReplaceLastChar(']');
+        begin
+          LStringBuilder.Append(ObjectToJson(TList(AObject).List[LFor],
+                                AStoreClassName));
+          if LFor < TList(AObject).Count - 1 then
+            LStringBuilder.Append(', ');
+        end;
+        LStringBuilder.Append(']');
         Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
       end;
     end;
-    Exit;
+    exit;
   end;
   if AObject is TStrings then
   begin
@@ -687,15 +675,18 @@ begin
       try
         LStringBuilder.Append('[');
         for LFor := 0 to TStrings(AObject).Count - 1 do
-          LStringBuilder.Append(StringToJSON(TStrings(AObject).Strings[LFor]))
-                        .Append(',');
-        LStringBuilder.ReplaceLastChar(']');
+        begin
+          LStringBuilder.Append(StringToJson(TStrings(AObject).Strings[LFor]));
+          if LFor < TStrings(AObject).Count - 1 then
+            LStringBuilder.Append(', ');
+        end;
+        LStringBuilder.Append(']');
         Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
       end;
     end;
-    Exit;
+    exit;
   end;
   if AObject is TCollection then
   begin
@@ -707,21 +698,24 @@ begin
       try
         LStringBuilder.Append('[');
         for LFor := 0 to TCollection(AObject).Count - 1 do
-          LStringBuilder.Append(ObjectToJSON(TCollection(AObject).Items[LFor], AStoreClassName))
-                        .Append(',');
-        LStringBuilder.ReplaceLastChar(']');
+        begin
+          LStringBuilder.Append(ObjectToJson(TCollection(AObject).Items[LFor], AStoreClassName));
+          if LFor < TCollection(AObject).Count - 1 then
+            LStringBuilder.Append(', ');
+        end;
+        LStringBuilder.Append(']');
         Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
       end;
     end;
-    Exit;
+    exit;
   end;
   LTypeInfo := FContext.GetType(AObject.ClassType);
   if LTypeInfo = nil then
   begin
     Result := 'null';
-    Exit;
+    exit;
   end;
   if (Pos('TObjectList<', AObject.ClassName) > 0) or
      (Pos('TList<', AObject.ClassName) > 0) then
@@ -739,33 +733,41 @@ begin
         LStringBuilder := TStringBuilder.Create;
         try
           LStringBuilder.Append('[');
-          for LFor := 0 to LValue.GetArrayLength -1 do
-            LStringBuilder.Append(ObjectToJSON(LValue.GetArrayElement(LFor).AsObject, AStoreClassName)).Append(',');
-          LStringBuilder.ReplaceLastChar(']');
+          for LFor := 0 to LValue.GetArrayLength - 1 do
+          begin
+            LStringBuilder.Append(ObjectToJson(LValue.GetArrayElement(LFor).AsObject, AStoreClassName));
+            if Lfor < LValue.GetArrayLength - 1 then
+              LStringBuilder.Append(', ');
+          end;
+          LStringBuilder.Append(']');
           Result := LStringBuilder.ToString;
         finally
           LStringBuilder.Free;
         end;
       end;
-      Exit;
+      exit;
     end;
     {$ELSE DELPHI15_UP}
     if TList(AObject).Count = 0 then
-      Result := '[]';
+      Result := '[]'
     else
     begin
       LStringBuilder := TStringBuilder.Create;
       try
         LStringBuilder.Append('[');
-        for LFor := 0 to TList(AObject).Count -1 do
-            LStringBuilder.Append(ObjectToJSON(TList(AObject).Items[LFor], AStoreClassName)).Append(',');
-          LStringBuilder.ReplaceLastChar(']');
-          Result := LStringBuilder.ToString;
+        for LFor := 0 to TList(AObject).Count - 1 do
+        begin
+          LStringBuilder.Append(ObjectToJson(TList(AObject).Items[LFor], AStoreClassName));
+          if Lfor < TList(AObject).Count - 1 then
+            LStringBuilder.Append(', ');
+        end;
+        LStringBuilder.Append(']');
+        Result := LStringBuilder.ToString;
       finally
         LStringBuilder.Free;
       end;
     end;
-    Exit;
+    exit;
     {$ENDIF DELPHI15_UP}
   end;
   LResultBuilder := TStringBuilder.Create;
@@ -778,16 +780,16 @@ begin
     for LProperty in LTypeInfo.GetProperties do
     begin
       if (not LProperty.IsWritable) then
-        Continue;
+        continue;
       if LProperty.PropertyType.TypeKind = tkArray then
-        LResultBuilder.Append(StringToJSON(LProperty.Name))
+        LResultBuilder.Append(StringToJson(LProperty.Name))
                       .Append(':')
-                      .Append(String(GetInstanceProp(AObject, LProperty)))
+                      .Append(VarToStr(GetInstanceProp(AObject, LProperty)))
                       .Append(',')
       else
-        LResultBuilder.Append(StringToJSON(LProperty.Name))
+        LResultBuilder.Append(StringToJson(LProperty.Name))
                       .Append(':')
-                      .Append(ValueToJSON(GetInstanceProp(AObject, LProperty)))
+                      .Append(ValueToJson(GetInstanceProp(AObject, LProperty)))
                       .Append(',');
     end;
     LResultBuilder.ReplaceLastChar('}');
@@ -797,11 +799,11 @@ begin
   end;
 end;
 
-class function TJSONBrObject.ResolveValueArrayString(const AValue: Variant): TArray<String>;
+class function TJsonBrObject.ResolveValueArrayString(const AValue: Variant): TArray<string>;
 var
   LSplitList: TStringList;
   LValue: Variant;
-  LFor: Integer;
+  LFor: integer;
 begin
   LValue := AValue;
   LSplitList := TStringList.Create;
@@ -815,11 +817,11 @@ begin
   end;
 end;
 
-class function TJSONBrObject.ResolveValueArrayCurrency(const AValue: Variant): TArray<Currency>;
+class function TJsonBrObject.ResolveValueArrayCurrency(const AValue: Variant): TArray<currency>;
 var
   LSplitList: TStringList;
   LValue: Variant;
-  LFor: Integer;
+  LFor: integer;
 begin
   LValue := AValue;
   LSplitList := TStringList.Create;
@@ -833,11 +835,11 @@ begin
   end;
 end;
 
-class function TJSONBrObject.ResolveValueArrayDouble(const AValue: Variant): TArray<Double>;
+class function TJsonBrObject.ResolveValueArrayDouble(const AValue: Variant): TArray<double>;
 var
   LSplitList: TStringList;
   LValue: Variant;
-  LFor: Integer;
+  LFor: integer;
 begin
   LValue := AValue;
   LSplitList := TStringList.Create;
@@ -851,11 +853,11 @@ begin
   end;
 end;
 
-class function TJSONBrObject.ResolveValueArrayInt64(const AValue: Variant): TArray<Int64>;
+class function TJsonBrObject.ResolveValueArrayInt64(const AValue: Variant): TArray<int64>;
 var
   LSplitList: TStringList;
   LValue: Variant;
-  LFor: Integer;
+  LFor: integer;
 begin
   LValue := AValue;
   LSplitList := TStringList.Create;
@@ -869,11 +871,11 @@ begin
   end;
 end;
 
-class function TJSONBrObject.ResolveValueArrayInteger(const AValue: Variant): TArray<Integer>;
+class function TJsonBrObject.ResolveValueArrayInteger(const AValue: Variant): TArray<integer>;
 var
   LSplitList: TStringList;
   LValue: Variant;
-  LFor: Integer;
+  LFor: integer;
 begin
   LValue := AValue;
   LSplitList := TStringList.Create;
@@ -887,16 +889,16 @@ begin
   end;
 end;
 
-{ TJSONBrParser }
+{ TJsonParser }
 
-procedure TJSONBrVariantData.TJSONBrParser.Init(const AJson: String; AIndex: Integer);
+procedure TJsonData.TJsonParser.Init(const AJson: String; AIndex: integer);
 begin
   FJson := AJson;
   FJsonLength := Length(FJson);
   FIndex := AIndex;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.GetNextChar: Char;
+function TJsonData.TJsonParser.GetNextChar: Char;
 begin
   Result := #0;
   if FIndex <= FJsonLength then
@@ -906,7 +908,7 @@ begin
   end;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.GetNextNonWhiteChar: Char;
+function TJsonData.TJsonParser.GetNextNonWhiteChar: Char;
 begin
   Result := #0;
   if FIndex <= FJsonLength then
@@ -916,16 +918,16 @@ begin
       begin
         Result := Char(FJson[FIndex]);
         Inc(FIndex);
-        Exit;
+        exit;
       end;
       Inc(FIndex);
     until FIndex > FJsonLength;
   end;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.CheckNextNonWhiteChar(AChar: Char): Boolean;
+function TJsonData.TJsonParser.CheckNextNonWhiteChar(AChar: Char): boolean;
 begin
-  Result := False;
+  Result := false;
   if FIndex <= FJsonLength then
   begin
     repeat
@@ -934,227 +936,212 @@ begin
         Result := FJson[FIndex] = AChar;
         if Result then
           Inc(FIndex);
-        Exit;
+        exit;
       end;
       Inc(FIndex);
     until FIndex > FJsonLength;
   end;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.CopyIndex: Integer;
-begin
-  Result := {$IFDEF NEXTGEN}FIndex +1{$ELSE}FIndex{$ENDIF};
-end;
-
-procedure TJSONBrVariantData.TJSONBrParser.GetNextStringUnEscape(var AStr: String);
+procedure TJsonData.TJsonParser.GetNextStringUnEscape(var AStr: String);
 var
   LChar: Char;
   LCopy: String;
-  LUnicode, LErr: Integer;
+  LUnicode, LErr: integer;
+  LStringBuilder: TStringBuilder;
 begin
-  repeat
-    LChar := GetNextChar;
-    case LChar of
-      #0:  Exit;
-      '"': Break;
-      '\': begin
-           LChar := GetNextChar;
-           case LChar of
-             #0 : Exit;
-             'b': TJSONBrObject.AppendChar(AStr, #08);
-             't': TJSONBrObject.AppendChar(AStr, #09);
-             'n': TJSONBrObject.AppendChar(AStr, #$0a);
-             'f': TJSONBrObject.AppendChar(AStr, #$0c);
-             'r': TJSONBrObject.AppendChar(AStr, #$0d);
-             'u':
-             begin
-               LCopy := Copy(FJson, CopyIndex, 4);
-               if Length(LCopy) <> 4 then
-                 Exit;
-               Inc(FIndex, 4);
-               Val('$' + LCopy, LUnicode, LErr);
-               if LErr <> 0 then
-                 Exit;
-               TJSONBrObject.AppendChar(AStr, Char(LUnicode));
+  LStringBuilder := TStringBuilder.Create;
+  try
+    LStringBuilder.Append(AStr);
+    repeat
+      LChar := GetNextChar;
+      case LChar of
+        #0:  exit;
+        '"': break;
+        '\': begin
+             LChar := GetNextChar;
+             case LChar of
+               #0 : exit;
+               'b': LStringBuilder.Append(#08);
+               't': LStringBuilder.Append(#09);
+               'n': LStringBuilder.Append(#$0a);
+               'f': LStringBuilder.Append(#$0c);
+               'r': LStringBuilder.Append(#$0d);
+               'u':
+               begin
+                 LCopy := Copy(FJson, FIndex, 4);
+                 if Length(LCopy) <> 4 then
+                   exit;
+                 Inc(FIndex, 4);
+                 Val('$' + LCopy, LUnicode, LErr);
+                 if LErr <> 0 then
+                   exit;
+                 LStringBuilder.Append(Char(LUnicode));
+               end;
+             else
+               LStringBuilder.Append(LChar);
              end;
-           else
-             TJSONBrObject.AppendChar(AStr, LChar);
            end;
-         end;
-    else
-      TJSONBrObject.AppendChar(AStr, LChar);
-    end;
-  until False;
+      else
+        LStringBuilder.Append(LChar);
+      end;
+    until false;
+    AStr := LStringBuilder.ToString;
+  finally
+    LStringBuilder.Free;
+  end;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.GetNextString(out AStr: String): Boolean;
+function TJsonData.TJsonParser.GetNextString(out AStr: String): boolean;
 var
-  LFor: Integer;
+  LFor: integer;
 begin
-  Result := False;
+  Result := false;
   for LFor := FIndex to FJsonLength do
   begin
     case FJson[LFor] of
       '"': begin // end of String without escape -> direct copy
-             AStr := Copy(FJson, CopyIndex, LFor - FIndex);
+             AStr := Copy(FJson, FIndex, LFor - FIndex);
              FIndex := LFor + 1;
              Result := True;
-             Exit;
+             exit;
            end;
       '\': begin // need unescaping
-             AStr := Copy(FJson, CopyIndex, LFor - FIndex);
+             AStr := Copy(FJson, FIndex, LFor - FIndex);
              FIndex := LFor;
              GetNextStringUnEscape(AStr);
              Result := True;
-             Exit;
+             exit;
            end;
     end;
   end;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.GetNextString: String;
-begin
-  if not GetNextString(Result) then
-    Result := '';
-end;
-
-function TJSONBrVariantData.TJSONBrParser.GetNextAlphaPropName(out AFieldName: String): Boolean;
+function TJsonData.TJsonParser.GetNextAlphaPropName(out AFieldName: String): boolean;
 var
-  LFor: Integer;
+  LFor: integer;
 begin
-  Result := False;
-  if (FIndex >= FJsonLength) or not (Ord(FJson[FIndex]) in [Ord('A') ..
-                                                            Ord('Z'),
-                                                            Ord('a') ..
-                                                            Ord('z'),
+  Result := false;
+  if (FIndex >= FJsonLength) or not (Ord(FJson[FIndex]) in [Ord('A') .. Ord('Z'),
+                                                            Ord('a') .. Ord('z'),
                                                             Ord('_'),
                                                             Ord('$')]) then
-    Exit;
+    exit;
   for LFor := FIndex + 1 to FJsonLength do
     case Ord(FJson[LFor]) of
-         Ord('0') ..
-         Ord('9'),
-         Ord('A') ..
-         Ord('Z'),
-         Ord('a') ..
-         Ord('z'),
-         Ord('_'):; // allow MongoDB extended syntax, e.g. {age:{$gt:18}}
+         Ord('0') .. Ord('9'),
+         Ord('A') .. Ord('Z'),
+         Ord('a') .. Ord('z'),
+         Ord('_'):;
          Ord(':'),
          Ord('='):
       begin
-        AFieldName := Copy(FJson, CopyIndex, LFor - FIndex);
+        AFieldName := Copy(FJson, FIndex, LFor - FIndex);
         FIndex := LFor + 1;
         Result := True;
-        Exit;
+        exit;
       end;
     else
-      Exit;
+      exit;
     end;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.GetNextJSON(out AValue: Variant): TJSONBrParserKind;
+function TJsonData.TJsonParser.GetNextJson(out AValue: Variant): TJsonValueKind;
 var
   LStr: String;
-  LInt64: Int64;
-  LValue: Double;
-  LStart, LErr: Integer;
+  LInt64: int64;
+  LValue: double;
+  LStart, LErr: integer;
 begin
-  Result := pkNone;
+  Result := jvkNone;
   case GetNextNonWhiteChar of
-    'n': if Copy(FJson, CopyIndex, 3) = 'ull' then
+    'n': if Copy(FJson, FIndex, 3) = 'ull' then
          begin
            Inc(FIndex, 3);
-           Result := pkNull;
+           Result := jvkNull;
            AValue := Null;
          end;
-    'f': if Copy(FJson, CopyIndex, 4) = 'alse' then
+    'f': if Copy(FJson, FIndex, 4) = 'alse' then
          begin
            Inc(FIndex, 4);
-           Result := pkFalse;
-           AValue := False;
+           Result := jvkBoolean;
+           AValue := false;
          end;
-    't': if Copy(FJson, CopyIndex, 3) = 'rue' then
+    't': if Copy(FJson, FIndex, 3) = 'rue' then
          begin
            Inc(FIndex, 3);
-           Result := pkTrue;
-           AValue := True;
+           Result := jvkBoolean;
+           AValue := true;
          end;
     '"': if GetNextString(LStr) then
          begin
-           Result := pkString;
+           Result := jvkString;
            AValue := LStr;
          end;
-    '{': if ParseJSONObject(TJSONBrVariantData(AValue)) then
-           Result := pkObject;
-    '[': if ParseJSONArray(TJSONBrVariantData(AValue)) then
-           Result := pkArray;
+    '{': if ParseJsonObject(TJsonData(AValue)) then
+           Result := jvkObject;
+    '[': if ParseJsonArray(TJsonData(AValue)) then
+           Result := jvkArray;
     '-', '0' .. '9':
          begin
-           LStart := CopyIndex - 1;
-           while True do
+           LStart := FIndex - 1;
+           while true do
              case FJson[FIndex] of
                '-', '+', '0' .. '9', '.', 'E', 'e':
                  Inc(FIndex);
              else
-               Break;
+               break;
              end;
-           LStr := Copy(FJson, LStart, CopyIndex - LStart);
+           LStr := Copy(FJson, LStart, FIndex - LStart);
            Val(LStr, LInt64, LErr);
            if LErr = 0 then
            begin
-             Result := pkInteger;
+             Result := jvkInteger;
              AValue := LInt64;
            end
            else
            begin
              Val(LStr, LValue, LErr);
              if LErr <> 0 then
-               Exit;
+               exit;
              AValue := LValue;
-             Result := pkFloat;
+             Result := jvkFloat;
            end;
          end;
   end;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.CheckNextIdent(const AExpectedIdent: String): Boolean;
-begin
-  Result := (GetNextNonWhiteChar = '"') and
-            (CompareText(GetNextString, AExpectedIdent) = 0) and
-            (GetNextNonWhiteChar = ':');
-end;
-
-function TJSONBrVariantData.TJSONBrParser.ParseJSONArray(out AData: TJSONBrVariantData): Boolean;
+function TJsonData.TJsonParser.ParseJsonArray(out AData: TJsonData): boolean;
 var
   LItem: Variant;
 begin
-  Result := False;
+  Result := false;
   AData.Init;
   if not CheckNextNonWhiteChar(']') then
   begin
     repeat
-      if GetNextJSON(LItem) = pkNone then
-        Exit;
+      if GetNextJson(LItem) = jvkNone then
+        exit;
       AData.AddValue(LItem);
       case GetNextNonWhiteChar of
-        ',': Continue;
-        ']': Break;
+        ',': continue;
+        ']': break;
       else
-        Exit;
+        exit;
       end;
-    until False;
+    until false;
     SetLength(AData.FValues, AData.FVCount);
   end;
-  AData.FVKind := vkArray;
+  AData.FVKind := jtkArray;
   Result := True;
 end;
 
-function TJSONBrVariantData.TJSONBrParser.ParseJSONObject(out AData: TJSONBrVariantData): Boolean;
+function TJsonData.TJsonParser.ParseJsonObject(out AData: TJsonData): boolean;
 var
-  LKey: String;
+  LKey: string;
   LItem: Variant;
 begin
-  Result := False;
+  Result := false;
   AData.Init;
   if not CheckNextNonWhiteChar('}') then
   begin
@@ -1162,73 +1149,73 @@ begin
       if CheckNextNonWhiteChar('"') then
       begin
         if (not GetNextString(LKey)) or (GetNextNonWhiteChar <> ':') then
-          Exit;
+          exit;
       end
       else
       if not GetNextAlphaPropName(LKey) then
-        Exit;
-      if GetNextJSON(LItem) = pkNone then
-        Exit;
+        exit;
+      if GetNextJson(LItem) = jvkNone then
+        exit;
       AData.AddNameValue(LKey, LItem);
       case GetNextNonWhiteChar of
-        ',': Continue;
-        '}': Break;
+        ',': continue;
+        '}': break;
       else
-        Exit;
+        exit;
       end;
-    until False;
+    until false;
     SetLength(AData.FNames, AData.FVCount);
   end;
   SetLength(AData.FValues, AData.FVCount);
-  AData.FVKind := vkObject;
+  AData.FVKind := jtkObject;
   Result := True;
 end;
 
 { TJSONBrVariantData }
 
-procedure TJSONBrVariantData.Init;
+procedure TJsonData.Init;
 begin
-  FVType := JSONVariantType.VarType;
-  FVKind := vkUndefined;
+  FVType := JsonVariantType.VarType;
+  FVKind := jtkUndefined;
   FVCount := 0;
-  Pointer(FNames) := nil;
-  Pointer(FValues) := nil;
+  pointer(FNames) := nil;
+  pointer(FValues) := nil;
 end;
 
-procedure TJSONBrVariantData.Init(const AJson: String);
+procedure TJsonData.Init(const AJson: String);
 begin
   Init;
-  FromJSON(AJson);
+  FromJson(AJson);
   if FVType = varNull then
-    FVKind := vkObject
+    FVKind := jtkObject
   else
-  if FVType <> JSONVariantType.VarType then
+  if FVType <> JsonVariantType.VarType then
     Init;
 end;
 
-procedure TJSONBrVariantData.InitFrom(const AValues: TVariantDynamicArray);
+procedure TJsonData.InitFrom(const AValues: TDynamicArrayValue);
 begin
   Init;
-  FVKind := vkArray;
+  FVKind := jtkArray;
   FValues := AValues;
   FVCount := Length(AValues);
 end;
 
-procedure TJSONBrVariantData.Clear;
+procedure TJsonData.Clear;
 begin
   FNames := nil;
   FValues := nil;
   Init;
 end;
 
-procedure TJSONBrVariantData.AddNameValue(const AName: String;
+procedure TJsonData.AddNameValue(const AName: String;
   const AValue: Variant);
 begin
-  if FVKind = vkUndefined then
-    FVKind := vkObject
+  if FVKind = jtkUndefined then
+    FVKind := jtkObject
   else
-  if FVKind <> vkObject then
-    raise EJSONBrException.CreateFmt('AddNameValue(%s) over array', [AName]);
+  if FVKind <> jtkObject then
+    raise EJsonBrException.CreateFmt('AddNameValue(%s) over array', [AName]);
   if FVCount <= Length(FValues) then
   begin
     SetLength(FValues, FVCount + FVCount shr 3 + 32);
@@ -1239,56 +1226,73 @@ begin
   Inc(FVCount);
 end;
 
-procedure TJSONBrVariantData.AddValue(const AValue: Variant);
+procedure TJsonData.AddValue(const AValue: Variant);
 begin
-  if FVKind = vkUndefined then
-    FVKind := vkArray
+  if FVKind = jtkUndefined then
+    FVKind := jtkArray
   else
-  if FVKind <> vkArray then
-    raise EJSONBrException.Create('AddValue() over object');
+  if FVKind <> jtkArray then
+    raise EJsonBrException.Create('AddValue() over object');
   if FVCount <= Length(FValues) then
     SetLength(FValues, FVCount + FVCount shr 3 + 32);
   FValues[FVCount] := AValue;
   Inc(FVCount);
 end;
 
-function TJSONBrVariantData.FromJSON(const AJson: String): Boolean;
+function TJsonData.FromJson(const AJson: String): boolean;
 var
-  LParser: TJSONBrParser;
+  LParser: TJsonParser;
 begin
-  LParser.Init(AJson, 0);
-  Result := LParser.GetNextJSON(Variant(Self)) in [pkObject, pkArray];
+  LParser.Init(AJson, {$IFDEF NEXTGEN}2{$ELSE}1{$ENDIF});
+  Result := LParser.GetNextJson(Variant(Self)) in [jvkObject, jvkArray];
 end;
 
-function TJSONBrVariantData.GetKind: TJSONBrVariantKind;
+function TJsonData.GetKind: TJsonTypeKind;
 begin
-  if (@Self = nil) or (FVType <> JSONVariantType.VarType) then
-    Result := vkUndefined
+  if (@Self = nil) or (FVType <> JsonVariantType.VarType) then
+    Result := jtkUndefined
   else
     Result := FVKind;
 end;
 
-function TJSONBrVariantData.GetCount: Integer;
+function TJsonData.GetCount: integer;
 begin
-  if (@Self = nil) or (FVType <> JSONVariantType.VarType) then
+  if (@Self = nil) or (FVType <> JsonVariantType.VarType) then
     Result := 0
   else
     Result := FVCount;
 end;
 
-function TJSONBrVariantData.GetValue(const AName: String): Variant;
+function TJsonData.GetDataType: TJsonValueKind;
+begin
+  case VarType(FVType) of
+    varEmpty, varNull: Result := jvkNull;
+    varBoolean: Result := jvkBoolean;
+    varString, varUString, varOleStr: Result := jvkString;
+    varInteger, varSmallint, varShortint, varByte, varWord, varLongWord, varInt64: Result := jvkInteger;
+    varSingle, varDouble, varCurrency, varDate: Result := jvkFloat;
+    varDispatch: Result := jvkObject;
+    varUnknown, varError: Result := jvkNone;
+    varVariant: Result := jvkNone;
+    varArray: Result := jvkArray;
+  else
+    Result := jvkNone;
+  end;
+end;
+
+function TJsonData.GetValue(const AName: String): Variant;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkObject) then
+  if (@Self <> nil) and (FVType = JsonVariantType.VarType) and (FVKind = jtkObject) then
     GetVarData(AName, TVarData(Result));
 end;
 
-function TJSONBrVariantData.GetValueCopy(const AName: String): Variant;
+function TJsonData.GetValueCopy(const AName: String): Variant;
 var
   LFor: Cardinal;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkObject) then
+  if (@Self <> nil) and (FVType = JsonVariantType.VarType) and (FVKind = jtkObject) then
   begin
     LFor := Cardinal(NameIndex(AName));
     if LFor < Cardinal(Length(FValues)) then
@@ -1296,28 +1300,27 @@ begin
   end;
 end;
 
-function TJSONBrVariantData.GetItem(AIndex: Integer): Variant;
+function TJsonData.GetItem(AIndex: integer): Variant;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkArray) then
+  if (@Self <> nil) and (FVType = JsonVariantType.VarType) and (FVKind = jtkArray) then
     if Cardinal(AIndex) < Cardinal(FVCount) then
       Result := FValues[AIndex];
 end;
 
-procedure TJSONBrVariantData.SetItem(AIndex: Integer; const AItem: Variant);
+procedure TJsonData.SetItem(AIndex: integer; const AItem: Variant);
 begin
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FVKind = vkArray) then
+  if (@Self <> nil) and (FVType = JsonVariantType.VarType) and (FVKind = jtkArray) then
     if Cardinal(AIndex) < Cardinal(FVCount) then
       FValues[AIndex] := AItem;
 end;
 
-procedure TJSONBrVariantData.SetKind(const Value: TJSONBrVariantKind);
+procedure TJsonData.SetKind(const Value: TJsonTypeKind);
 begin
   FVKind := Value;
 end;
 
-function TJSONBrVariantData.GetVarData(const AName: String;
-  var ADest: TVarData): Boolean;
+function TJsonData.GetVarData(const AName: String; var ADest: TVarData): boolean;
 var
   LFor: Cardinal;
 begin
@@ -1329,26 +1332,31 @@ begin
     Result := True;
   end
   else
-    Result := False;
+    Result := false;
 end;
 
-function TJSONBrVariantData.NameIndex(const AName: String): Integer;
+function TJsonData.NameIndex(const AName: String): integer;
 begin
-  if (@Self <> nil) and (FVType = JSONVariantType.VarType) and (FNames <> nil) then
+  if (@Self <> nil) and (FVType = JsonVariantType.VarType) and (FNames <> nil) then
     for Result := 0 to FVCount - 1 do
       if FNames[Result] = AName then
-        Exit;
+        exit;
   Result := -1;
 end;
 
-procedure TJSONBrVariantData.SetValue(const AName: String; const AValue: Variant);
+function TJsonData.Names: TDynamicArrayKey;
+begin
+  Result := FNames;
+end;
+
+procedure TJsonData.SetValue(const AName: String; const AValue: Variant);
 var
-  LFor: Integer;
+  LFor: integer;
 begin
   if @Self = nil then
-    raise EJSONBrException.Create('Unexpected Value[] access');
+    raise EJsonBrException.Create('Unexpected Value[] access');
   if AName = '' then
-    raise EJSONBrException.Create('Unexpected Value['''']');
+    raise EJsonBrException.Create('Unexpected Value['''']');
   LFor := NameIndex(AName);
   if LFor < 0 then
     AddNameValue(AName, AValue)
@@ -1356,13 +1364,13 @@ begin
     FValues[LFor] := String(AValue);
 end;
 
-function TJSONBrVariantData.ToJSON: String;
+function TJsonData.ToJson: String;
 var
-  LFor: Integer;
+  LFor: integer;
   LResultBuilder: TStringBuilder;
 begin
   case FVKind of
-    vkObject:
+    jtkObject:
       if FVCount = 0 then
         Result := '{}'
       else
@@ -1371,17 +1379,20 @@ begin
         try
           LResultBuilder.Append('{');
           for LFor := 0 to FVCount - 1 do
-            LResultBuilder.Append(TJSONBrObject.StringToJSON(FNames[LFor]))
+          begin
+            LResultBuilder.Append(TJsonBrObject.StringToJson(FNames[LFor]))
                           .Append(':')
-                          .Append(TJSONBrObject.ValueToJSON(FValues[LFor]))
-                          .Append(',');
-          LResultBuilder.ReplaceLastChar('}');
+                          .Append(TJsonBrObject.ValueToJson(FValues[LFor]));
+            if LFor < FVCount - 1 then
+              LResultBuilder.Append(', ');
+          end;
+          LResultBuilder.Append('}');
           Result := LResultBuilder.ToString;
         finally
           LResultBuilder.Free;
         end;
       end;
-    vkArray:
+    jtkArray:
       if FVCount = 0 then
         Result := '[]'
       else
@@ -1390,9 +1401,12 @@ begin
         try
           LResultBuilder.Append('[');
           for LFor := 0 to FVCount - 1 do
-            LResultBuilder.Append(TJSONBrObject.ValueToJSON(FValues[LFor]))
-                          .Append(',');
-          LResultBuilder.ReplaceLastChar(']');
+          begin
+            LResultBuilder.Append(TJsonBrObject.ValueToJson(FValues[LFor]));
+            if LFor < FVCount - 1 then
+              LResultBuilder.Append(', ');
+          end;
+          LResultBuilder.Append(']');
           Result := LResultBuilder.ToString;
         finally
           LResultBuilder.Free;
@@ -1403,9 +1417,9 @@ begin
   end;
 end;
 
-function TJSONBrVariantData.ToObject(AObject: TObject): Boolean;
+function TJsonData.ToObject(AObject: TObject): boolean;
 var
-  LFor: Integer;
+  LFor: integer;
   FContext: TRttiContext;
   LItem: TCollectionItem;
   LListType: TRttiType;
@@ -1427,11 +1441,11 @@ var
   end;
 
 begin
-  Result := False;
+  Result := false;
   if AObject = nil then
-    Exit;
+    exit;
   case FVKind of
-    vkObject:
+    jtkObject:
       begin
         LListType := FContext.GetType(AObject.ClassType);
         if LListType <> nil then
@@ -1440,19 +1454,19 @@ begin
           begin
             LProperty := LListType.GetProperty(FNames[LFor]);
             if LProperty <> nil then
-              TJSONBrObject.SetInstanceProp(AObject, LProperty, FValues[LFor]);
+              TJsonBrObject.SetInstanceProp(AObject, LProperty, FValues[LFor]);
           end;
         end;
       end;
-    vkArray:
+    jtkArray:
       if AObject.InheritsFrom(TCollection) then
       begin
         TCollection(AObject).Clear;
         for LFor := 0 to Count - 1 do
         begin
           LItem := TCollection(AObject).Add;
-          if not TJSONBrObject.JSONVariantData(FValues[LFor]).ToObject(LItem) then
-            Exit;
+          if not TJsonBrObject.JsonVariantData(FValues[LFor]).ToObject(LItem) then
+            exit;
         end;
       end
       else
@@ -1477,21 +1491,26 @@ begin
           begin
             LObjectType := LListType.AsInstance.MetaclassType.Create;
             MethodCall(LObjectType, 'Create', []);
-            if not TJSONBrObject.JSONVariantData(FValues[LFor]).ToObject(LObjectType) then
-              Exit;
+            if not TJsonBrObject.JsonVariantData(FValues[LFor]).ToObject(LObjectType) then
+              exit;
             MethodCall(AObject, 'Add', [LObjectType]);
           end;
         end;
       end
       else
-        Exit;
+        exit;
   else
-    Exit;
+    exit;
   end;
   Result := True;
 end;
 
-function TJSONBrVariantData.GetListType(LRttiType: TRttiType): TRttiType;
+function TJsonData.Values: TDynamicArrayValue;
+begin
+  Result := FValues;
+end;
+
+function TJsonData.GetListType(LRttiType: TRttiType): TRttiType;
 var
   LTypeName: String;
   LContext: TRttiContext;
@@ -1509,53 +1528,53 @@ begin
    end;
 end;
 
-{ TJSONVariant }
+{ TJsonVariant }
 
-procedure TJSONVariant.Cast(var ADest: TVarData; const ASource: TVarData);
+procedure TJsonVariant.Cast(var ADest: TVarData; const ASource: TVarData);
 begin
   CastTo(ADest, ASource, VarType);
 end;
 
-procedure TJSONVariant.CastTo(var ADest: TVarData; const ASource: TVarData;
+procedure TJsonVariant.CastTo(var ADest: TVarData; const ASource: TVarData;
   const AVarType: TVarType);
 begin
   if ASource.VType <> VarType then
     RaiseCastError;
-  Variant(ADest) := TJSONBrVariantData(ASource).ToJSON;
+  Variant(ADest) := TJsonData(ASource).ToJson;
 end;
 
-procedure TJSONVariant.Clear(var AVarData: TVarData);
+procedure TJsonVariant.Clear(var AVarData: TVarData);
 begin
   AVarData.VType := varEmpty;
-  Finalize(TJSONBrVariantData(AVarData).FNames);
-  Finalize(TJSONBrVariantData(AVarData).FValues);
+  Finalize(TJsonData(AVarData).FNames);
+  Finalize(TJsonData(AVarData).FValues);
 end;
 
-procedure TJSONVariant.Copy(var ADest: TVarData; const ASource: TVarData;
-  const AIndirect: Boolean);
+procedure TJsonVariant.Copy(var ADest: TVarData; const ASource: TVarData;
+  const AIndirect: boolean);
 begin
   if AIndirect then
     SimplisticCopy(ADest, ASource, True)
   else
   begin
     VarClear(Variant(ADest));
-    TJSONBrVariantData(ADest).Init;
-    TJSONBrVariantData(ADest) := TJSONBrVariantData(ASource);
+    TJsonData(ADest).Init;
+    TJsonData(ADest) := TJsonData(ASource);
   end;
 end;
 
-function TJSONVariant.GetProperty(var ADest: TVarData; const AVarData: TVarData;
-  const AName: String): Boolean;
+function TJsonVariant.GetProperty(var ADest: TVarData; const AVarData: TVarData;
+  const AName: String): boolean;
 begin
-  if not TJSONBrVariantData(AVarData).GetVarData(AName, ADest) then
+  if not TJsonData(AVarData).GetVarData(AName, ADest) then
     ADest.VType := varNull;
   Result := True;
 end;
 
-function TJSONVariant.SetProperty(const AVarData: TVarData; const AName: String;
-  const AValue: TVarData): Boolean;
+function TJsonVariant.SetProperty(const AVarData: TVarData; const AName: String;
+  const AValue: TVarData): boolean;
 begin
-  TJSONBrVariantData(AVarData).SetValue(AName, Variant(AValue));
+  TJsonData(AVarData).SetValue(AName, Variant(AValue));
   Result := True;
 end;
 
@@ -1563,16 +1582,14 @@ procedure TStringBuilderHelper.ReplaceLastChar(const AChar: Char);
 begin
   if Self.Length > 1 then
   begin
-    // Remove espaço final vazio
     if Self.Chars[Self.Length - 1] = ' ' then
       Self.Remove(Self.Length - 1, 1);
-    // Troca o último caracter
     Self.Chars[Self.Length - 1] := AChar;
   end;
 end;
 
 initialization
-  JSONVariantType := TJSONVariant.Create;
-  TJSONBrObject.UseISO8601DateFormat := True;
+  JsonVariantType := TJsonVariant.Create;
+  TJsonBrObject.UseISO8601DateFormat := True;
 
 end.

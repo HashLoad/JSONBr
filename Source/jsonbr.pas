@@ -26,38 +26,54 @@ unit jsonbr;
 interface
 
 uses
+  Rtti,
   SysUtils,
+  StrUtils,
+  Classes,
+  Variants,
   Generics.Collections,
   jsonbr.utils,
   jsonbr.writer,
+  jsonbr.reader,
   jsonbr.builders;
 
 type
-  TJSONBr = class
+  TJsonBr = class
   private
-    class var FJSONObject: TJSONBrObject;
-    class var FJSONWriter: TJSONWriter;
+    class var FJsonObject: TJsonBrObject;
+    class var FJsonWriter: TJsonWriter;
+    class var FJsonReader: TJsonReader;
     class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static;
     class procedure SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static;
     class function GetFormatSettings: TFormatSettings; static;
     class procedure SetFormatSettings(const Value: TFormatSettings); static;
+//    class function _SplitString(const AString,
+//      ADelimiter: string): TArray<string>; static;
   public
     class constructor Create;
     class destructor Destroy;
     class function ObjectToJsonString(AObject: TObject;
-      AStoreClassName: Boolean = False): string;
+      AStoreClassName: boolean = False): string;
     class function ObjectListToJsonString(AObjectList: TObjectList<TObject>;
-      AStoreClassName: Boolean = False): string; overload;
+      AStoreClassName: boolean = False): string; overload;
     class function ObjectListToJsonString<T: class, constructor>(AObjectList: TObjectList<T>;
-      AStoreClassName: Boolean = False): string; overload;
+      AStoreClassName: boolean = False): string; overload;
     class function JsonToObject<T: class, constructor>(const AJson: string): T; overload;
-    class function JsonToObject<T: class>(AObject: T;
-      const AJson: string): Boolean; overload;
+    class function JsonToObject<T: class>(const AObject: T;
+      const AJson: string): boolean; overload;
     class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>;
     class procedure JsonToObject(const AJson: string; AObject: TObject); overload;
-    //
-    class function BeginObject(const AValue: String = ''): TJSONWriter;
-    class function BeginArray: TJSONWriter;
+    // Write
+    class function BeginObject(const AValue: String = ''): TJsonWriter;
+    class function BeginArray: TJsonWriter;
+    // Reader
+    class procedure ParseFromFile(const AFileName: string;
+      const AUtf8: boolean = true);
+    class procedure SaveJsonToFile(const AFileName: string;
+      const AUtf8: boolean = true);
+    class function Write: TJsonWriter;
+    class function Reader: TJsonReader;
+    class function Data: TJsonData;
     // Events GetValue and SetValue
     class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
     class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
@@ -68,62 +84,70 @@ implementation
 
 { TJSONBr }
 
-class function TJSONBr.BeginArray: TJSONWriter;
+class function TJsonBr.BeginArray: TJsonWriter;
 begin
-  Result := FJSONWriter.BeginArray;
+  Result := FJsonWriter.BeginArray;
 end;
 
-class function TJSONBr.BeginObject(const AValue: String = ''): TJSONWriter;
+class function TJsonBr.BeginObject(const AValue: string = ''): TJsonWriter;
 begin
-  Result := FJSONWriter.BeginObject(AValue);
+  Result := FJsonWriter.BeginObject(AValue);
 end;
 
-class constructor TJSONBr.Create;
+class constructor TJsonBr.Create;
 begin
-  FJSONWriter := TJSONWriter.Create;
-  FJSONObject := TJSONBrObject.Create;
+  FJsonObject := TJsonBrObject.Create;
+  FJsonWriter := TJsonWriter.Create(FJsonObject);
+  FJsonReader := TJsonReader.Create;
 end;
 
-class destructor TJSONBr.Destroy;
+class destructor TJsonBr.Destroy;
 begin
-  FJSONObject.Free;
-  FJSONWriter.Free;
+  FJsonObject.Free;
+  FJsonWriter.Free;
+  FJsonReader.Free;
   inherited;
 end;
 
-class function TJSONBr.GetFormatSettings: TFormatSettings;
+class function TJsonBr.GetFormatSettings: TFormatSettings;
 begin
   Result := JsonBrFormatSettings;
 end;
 
-class procedure TJSONBr.SetFormatSettings(const Value: TFormatSettings);
+class procedure TJsonBr.SaveJsonToFile(const AFileName: string;
+  const AUtf8: boolean);
+begin
+  FJsonReader.SaveJsonToFile(AFileName, AUtf8);
+end;
+
+class procedure TJsonBr.SetFormatSettings(const Value: TFormatSettings);
 begin
   JsonBrFormatSettings := Value;
 end;
 
-class procedure TJSONBr.SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
+class procedure TJsonBr.SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
 begin
-  FJSONObject.OnGetValue := Value;
+  FJsonObject.OnGetValue := Value;
 end;
 
-class procedure TJSONBr.JsonToObject(const AJson: string; AObject: TObject);
+class procedure TJsonBr.JsonToObject(const AJson: string; AObject: TObject);
 begin
-  FJSONObject.JSONToObject(AObject, AJson);
+  FJsonObject.JSONToObject(AObject, AJson);
 end;
 
-class function TJSONBr.JsonToObject<T>(AObject: T;
-  const AJson: string): Boolean;
+class function TJsonBr.JsonToObject<T>(const AObject: T;
+  const AJson: string): boolean;
 begin
-  Result := FJSONObject.JSONToObject(TObject(AObject), AJson);
+  Result := FJsonObject.JSONToObject(TObject(AObject), AJson);
 end;
 
-class function TJSONBr.JsonToObject<T>(const AJson: string): T;
+class function TJsonBr.JsonToObject<T>(const AJson: string): T;
 begin
-  Result := FJSONObject.JSONToObject<T>(AJson);
+  Result := FJsonObject.JSONToObject<T>(AJson);
 end;
 
-class function TJSONBr.ObjectListToJsonString(AObjectList: TObjectList<TObject>;
-  AStoreClassName: Boolean): string;
+class function TJsonBr.ObjectListToJsonString(AObjectList: TObjectList<TObject>;
+  AStoreClassName: boolean): string;
 var
   LFor: Integer;
   LResultBuilder: TStringBuilder;
@@ -144,10 +168,10 @@ begin
   end;
 end;
 
-class function TJSONBr.ObjectListToJsonString<T>(AObjectList: TObjectList<T>;
-  AStoreClassName: Boolean): string;
+class function TJsonBr.ObjectListToJsonString<T>(AObjectList: TObjectList<T>;
+  AStoreClassName: boolean): string;
 var
-  LFor: Integer;
+  LFor: integer;
   LResultBuilder: TStringBuilder;
 begin
   LResultBuilder := TStringBuilder.Create;
@@ -155,7 +179,7 @@ begin
     LResultBuilder.Append('[');
     for LFor := 0 to AObjectList.Count -1 do
     begin
-      LResultBuilder.Append(ObjectToJsonString(T(AObjectList.Items[LFor]), AStoreClassName));
+      LResultBuilder.Append(FJsonObject.ObjectToJSON(AObjectList.Items[LFor] as T, AStoreClassName));
       if LFor < AObjectList.Count -1 then
         LResultBuilder.Append(', ');
     end;
@@ -166,20 +190,66 @@ begin
   end;
 end;
 
-class function TJSONBr.ObjectToJsonString(AObject: TObject;
-  AStoreClassName: Boolean): string;
+class function TJsonBr.ObjectToJsonString(AObject: TObject;
+  AStoreClassName: boolean): string;
 begin
-  Result := FJSONObject.ObjectToJSON(AObject, AStoreClassName);
+  Result := FJsonObject.ObjectToJSON(AObject, AStoreClassName);
 end;
 
-class procedure TJSONBr.SetNotifyEventSetValue(const Value: TNotifyEventSetValue);
+class procedure TJsonBr.ParseFromFile(const AFileName: string;
+  const AUtf8: boolean);
 begin
-  FJSONObject.OnSetValue := Value;
+  FJsonReader.ParseFromFile(AFileName, AUtf8);
 end;
 
-class function TJSONBr.JsonToObjectList<T>(const AJson: string): TObjectList<T>;
+class function TJsonBr.Reader: TJsonReader;
 begin
-  Result := FJSONObject.JSONToObjectList<T>(AJson);
+  Result := FJsonReader;
 end;
+
+class function TJsonBr.Data: TJsonData;
+begin
+  Result := FJsonReader.CurrentData;
+end;
+
+class procedure TJsonBr.SetNotifyEventSetValue(const Value: TNotifyEventSetValue);
+begin
+  FJsonObject.OnSetValue := Value;
+end;
+
+class function TJsonBr.Write: TJsonWriter;
+begin
+  Result := FJsonWriter;
+end;
+
+class function TJsonBr.JsonToObjectList<T>(const AJson: string): TObjectList<T>;
+begin
+  Result := FJsonObject.JsonToObjectList<T>(AJson);
+end;
+
+//class function TJsonBr._SplitString(const AString: string;
+//  const ADelimiter: string): TArray<string>;
+//var
+//  LDelimiterPos, LLastDelimiterPos: integer;
+//  LPart: string;
+//begin
+//  LLastDelimiterPos := 1;
+//  SetLength(Result, 0);
+//  repeat
+//    LDelimiterPos := Pos(ADelimiter, AString, LLastDelimiterPos);
+//    if LDelimiterPos > 0 then
+//    begin
+//      LPart := Copy(AString, LLastDelimiterPos, LDelimiterPos - LLastDelimiterPos);
+//      LLastDelimiterPos := LDelimiterPos + Length(ADelimiter);
+//    end
+//    else
+//      LPart := Copy(AString, LLastDelimiterPos, Length(AString));
+//    if LPart <> '' then
+//    begin
+//      SetLength(Result, Length(Result) + 1);
+//      Result[Length(Result) - 1] := LPart;
+//    end;
+//  until LDelimiterPos = 0;
+//end;
 
 end.

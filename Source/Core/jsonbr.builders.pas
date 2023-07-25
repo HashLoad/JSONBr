@@ -375,7 +375,7 @@ begin
           else
             Result := GetEnumValue(LTypeInfo, AProperty.GetValue(AInstance).AsString) >= 0;
         end;
-      tkDynArray:
+      tkArray, tkDynArray:
         begin
           if IsBlob(LTypeInfo) then
             Result := Null
@@ -404,15 +404,12 @@ var
   LValue: string;
 begin
   Result := nil;
-
-  if not Assigned(ATypeInfo) or (ATypeInfo.Kind <> tkDynArray) then
+  if not Assigned(ATypeInfo) or not (ATypeInfo.Kind in [tkArray, tkDynArray]) then
     Exit;
-
   LValue := VarToStr(AValue);
   LValue := StringReplace(LValue, '[', '', [rfReplaceAll]);
   LValue := StringReplace(LValue, ']', '', [rfReplaceAll]);
   LValue := StringReplace(LValue, '"', '', [rfReplaceAll]);
-
   if EndsText('<System.String>', string(ATypeInfo.Name)) then
     Result := TValue.From(ResolveValueArrayString(LValue))
   else if EndsText('<System.Integer>', string(ATypeInfo.Name)) then
@@ -488,7 +485,7 @@ begin
           else
             AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
         end;
-      tkDynArray:
+      tkArray, tkDynArray:
         begin
           if IsBlob(LTypeInfo) then
 
@@ -781,7 +778,7 @@ begin
     begin
       if (not LProperty.IsWritable) then
         continue;
-      if LProperty.PropertyType.TypeKind = tkArray then
+      if LProperty.PropertyType.TypeKind in [tkArray, tkDynArray] then
         LResultBuilder.Append(StringToJson(LProperty.Name))
                       .Append(':')
                       .Append(VarToStr(GetInstanceProp(AObject, LProperty)))

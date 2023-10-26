@@ -18,13 +18,13 @@ uses
   Test.Consts in 'Test.Consts.pas',
   Test.Model in 'Test.Model.pas',
   jsonbr.builders in '..\Source\Core\jsonbr.builders.pas',
-  jsonbr in '..\Source\Core\jsonbr.pas',
   jsonbr.writer in '..\Source\Core\jsonbr.writer.pas',
   XSuperJSON in 'x-superobject\XSuperJSON.pas',
   XSuperObject in 'x-superobject\XSuperObject.pas',
   test.res_json in 'test.res_json.pas',
   test.json_br in 'test.json_br.pas',
-  test.xsuper in 'test.xsuper.pas';
+  test.xsuper in 'test.xsuper.pas',
+  jsonbr in '..\Source\jsonbr.pas';
 
 {$IFNDEF TESTINSIGHT}
 var
@@ -65,6 +65,7 @@ begin
 
     {$IFNDEF CI}
     //We don't want this happening when running under CI.
+    TDUnitX.Options.ExitBehavior := TDUnitXExitBehavior.Pause;
     if TDUnitX.Options.ExitBehavior = TDUnitXExitBehavior.Pause then
     begin
       SetColorConsole(clWhite);

@@ -107,6 +107,7 @@ var
 begin
   SetColorConsole(clPurple);
   System.Writeln(' ');
+  System.Writeln('.XSuperJSON');
 
   Stopwatch := TStopwatch.StartNew;
   _XSuperObjectLoop50000;
@@ -224,7 +225,7 @@ var
 begin
   SetColorConsole(clRed);
   System.Writeln(' ');
-  System.Writeln('REST.Json Delphi');
+  System.Writeln('.REST.Json Delphi');
 
   Stopwatch := TStopwatch.StartNew;
   _RESTJsonLoop50000;

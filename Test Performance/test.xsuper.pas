@@ -9,10 +9,6 @@ uses
   Generics.Collections,
   Test.Model,
   Test.Consts,
-  jsonbr,
-  jsonbr.builders,
-  JSON,
-  REST.Json,
   XSuperJSON,
   XSuperObject;
 

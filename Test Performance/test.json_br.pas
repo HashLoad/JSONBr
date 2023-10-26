@@ -10,11 +10,7 @@ uses
   Test.Model,
   Test.Consts,
   jsonbr,
-  jsonbr.builders,
-  JSON,
-  REST.Json,
-  XSuperJSON,
-  XSuperObject;
+  jsonbr.builders;
 
 procedure _JSONBrLoop50000;
 procedure _JSONBrJsonToObject;

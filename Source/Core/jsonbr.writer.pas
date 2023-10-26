@@ -15,7 +15,8 @@
        arquivo LICENSE na pasta principal.
 }
 
-{ @abstract(JSONBr Framework)
+{
+  @abstract(JSONBr Framework)
   @created(23 Nov 2020)
   @author(Isaque Pinheiro <isaquepsp@gmail.com>)
   @author(Telegram : @IsaquePinheiro)
@@ -28,8 +29,10 @@ unit jsonbr.writer;
 interface
 
 uses
+  Variants,
   SysUtils,
   Classes,
+  jsonbr.utils,
   jsonbr.builders;
 
 type
@@ -41,16 +44,16 @@ type
     procedure _EndJson;
   public
     constructor Create(const AJsonObject: TJsonBrObject);
-    function BeginObject(const AValue: String = ''): TJsonWriter;
-    function BeginArray: TJsonWriter;
-    function EndObject: TJsonWriter;
-    function EndArray: TJsonWriter;
-    function AddPair(const APair: String; const AValue: String): TJsonWriter; overload;
-    function AddPair(const APair: String; const AValue: Integer): TJsonWriter; overload;
-    function AddPair(const APair: String; const AValue: TJsonWriter): TJsonWriter; overload;
+    function BeginObject(const AValue: String = ''): TJsonWriter; inline;
+    function BeginArray: TJsonWriter; inline;
+    function EndObject: TJsonWriter; inline;
+    function EndArray: TJsonWriter; inline;
+    function AddPair(const APair: String; const AValue: String): TJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: Integer): TJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: TJsonWriter): TJsonWriter; overload; inline;
     function AddPairArray(const APair: String; const AValue: array of string): TJsonWriter; overload;
     function AddPairArray(const APair: String; const AValue: array of Integer): TJsonWriter; overload;
-    function ToJson: String;
+    function ToJson: String; inline;
   end;
 
 implementation

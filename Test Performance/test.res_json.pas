@@ -9,12 +9,8 @@ uses
   Generics.Collections,
   Test.Model,
   Test.Consts,
-  jsonbr,
-  jsonbr.builders,
   JSON,
-  REST.Json,
-  XSuperJSON,
-  XSuperObject;
+  REST.Json;
 
 procedure _RESTJsonLoop50000;
 procedure _RESTJsonJsonToObject;

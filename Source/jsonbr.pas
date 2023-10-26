@@ -43,36 +43,33 @@ type
     class var FJsonObject: TJsonBrObject;
     class var FJsonWriter: TJsonWriter;
     class var FJsonReader: TJsonReader;
-    class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static;
-    class procedure SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static;
-    class function GetFormatSettings: TFormatSettings; static;
-    class procedure SetFormatSettings(const Value: TFormatSettings); static;
-//    class function _SplitString(const AString,
-//      ADelimiter: string): TArray<string>; static;
+    class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static; inline;
+    class procedure SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static; inline;
+    class function GetFormatSettings: TFormatSettings; static; inline;
+    class procedure SetFormatSettings(const Value: TFormatSettings); static; inline;
   public
     class constructor Create;
     class destructor Destroy;
     class function ObjectToJsonString(AObject: TObject;
-      AStoreClassName: boolean = False): string;
+      AStoreClassName: boolean = False): string; inline;
     class function ObjectListToJsonString(AObjectList: TObjectList<TObject>;
-      AStoreClassName: boolean = False): string; overload;
+      AStoreClassName: boolean = False): string; overload; inline;
     class function ObjectListToJsonString<T: class, constructor>(AObjectList: TObjectList<T>;
-      AStoreClassName: boolean = False): string; overload;
-    class function JsonToObject<T: class, constructor>(const AJson: string): T; overload;
+      AStoreClassName: boolean = False): string; overload; inline;
+    class function JsonToObject<T: class, constructor>(const AJson: string): T; overload; inline;
     class function JsonToObject<T: class>(const AObject: T;
-      const AJson: string): boolean; overload;
-    class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>;
-    class procedure JsonToObject(const AJson: string; AObject: TObject); overload;
+      const AJson: string): boolean; overload; inline;
+    class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>; overload; inline;
+    class function JsonToObjectList(const AJson: string; const AType: TClass): TObjectList<TObject>; overload; inline;
+    class procedure JsonToObject(const AJson: string; AObject: TObject); overload; inline;
     // Write
-    class function BeginObject(const AValue: String = ''): TJsonWriter;
-    class function BeginArray: TJsonWriter;
+    class function BeginObject(const AValue: String = ''): TJsonWriter; inline;
+    class function BeginArray: TJsonWriter; inline;
     // Reader
-    class procedure ParseFromFile(const AFileName: string;
-      const AUtf8: boolean = true);
-    class procedure SaveJsonToFile(const AFileName: string;
-      const AUtf8: boolean = true);
-    class function Write: TJsonWriter;
-    class function Reader: TJsonReader;
+    class procedure ParseFromFile(const AFileName: string; const AUtf8: boolean = true); inline;
+    class procedure SaveJsonToFile(const AFileName: string; const AUtf8: boolean = true); inline;
+    class function Write: TJsonWriter; inline;
+    class function Reader: TJsonReader; inline;
     class function Data: TJsonData;
     // Events GetValue and SetValue
     class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
@@ -222,34 +219,15 @@ begin
   Result := FJsonWriter;
 end;
 
+class function TJsonBr.JsonToObjectList(const AJson: string;
+  const AType: TClass): TObjectList<TObject>;
+begin
+  Result := FJsonObject.JsonToObjectList(AJson, AType);
+end;
+
 class function TJsonBr.JsonToObjectList<T>(const AJson: string): TObjectList<T>;
 begin
   Result := FJsonObject.JsonToObjectList<T>(AJson);
 end;
-
-//class function TJsonBr._SplitString(const AString: string;
-//  const ADelimiter: string): TArray<string>;
-//var
-//  LDelimiterPos, LLastDelimiterPos: integer;
-//  LPart: string;
-//begin
-//  LLastDelimiterPos := 1;
-//  SetLength(Result, 0);
-//  repeat
-//    LDelimiterPos := Pos(ADelimiter, AString, LLastDelimiterPos);
-//    if LDelimiterPos > 0 then
-//    begin
-//      LPart := Copy(AString, LLastDelimiterPos, LDelimiterPos - LLastDelimiterPos);
-//      LLastDelimiterPos := LDelimiterPos + Length(ADelimiter);
-//    end
-//    else
-//      LPart := Copy(AString, LLastDelimiterPos, Length(AString));
-//    if LPart <> '' then
-//    begin
-//      SetLength(Result, Length(Result) + 1);
-//      Result[Length(Result) - 1] := LPart;
-//    end;
-//  until LDelimiterPos = 0;
-//end;
 
 end.

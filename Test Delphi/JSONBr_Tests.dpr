@@ -51,14 +51,13 @@ begin
     if not results.AllPassed then
       System.ExitCode := EXIT_ERRORS;
 
-    {$IFNDEF CI}
     //We don't want this happening when running under CI.
+    TDUnitX.Options.ExitBehavior := TDUnitXExitBehavior.Pause;
     if TDUnitX.Options.ExitBehavior = TDUnitXExitBehavior.Pause then
     begin
       System.Write('Done.. press <Enter> key to quit.');
       System.Readln;
     end;
-    {$ENDIF}
   except
     on E: Exception do
       System.Writeln(E.ClassName, ': ', E.Message);

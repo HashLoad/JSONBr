@@ -15,7 +15,8 @@
        arquivo LICENSE na pasta principal.
 }
 
-{ @abstract(JSONBr Framework)
+{
+  @abstract(JSONBr Framework)
   @created(23 Nov 2020)
   @author(Isaque Pinheiro <isaquepsp@gmail.com>)
   @author(Telegram : @IsaquePinheiro)
@@ -28,136 +29,161 @@ unit jsonbr.writer;
 interface
 
 uses
+  Variants,
   SysUtils,
+  Classes,
+  jsonbr.utils,
   jsonbr.builders;
 
 type
-  TJSONWriter = class
+  TJsonWriter = class
   private
-    FJSONObject: TJSONBrObject;
-    FJSON: String;
+    FJsonObject: TJsonBrObject;
+    FJson: TStringBuilder;
+    procedure _BeginJson;
+    procedure _EndJson;
   public
-    constructor Create;
-    destructor Destroy; override;
-    function BeginObject(const AValue: String = ''): TJSONWriter;
-    function BeginArray: TJSONWriter;
-    function EndObject: TJSONWriter;
-    function EndArray: TJSONWriter;
-    function AddPair(const APair: String; const AValue: String): TJSONWriter; overload;
-    function AddPair(const APair: String; const AValue: Integer): TJSONWriter; overload;
-    function AddPair(const APair: String; const AValue: TJSONWriter): TJSONWriter; overload;
-    function AddPairArray(const APair: String; const AValue: array of string): TJSONWriter; overload;
-    function AddPairArray(const APair: String; const AValue: array of Integer): TJSONWriter; overload;
-    function ToJSON: String;
+    constructor Create(const AJsonObject: TJsonBrObject);
+    function BeginObject(const AValue: String = ''): TJsonWriter; inline;
+    function BeginArray: TJsonWriter; inline;
+    function EndObject: TJsonWriter; inline;
+    function EndArray: TJsonWriter; inline;
+    function AddPair(const APair: String; const AValue: String): TJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: Integer): TJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: TJsonWriter): TJsonWriter; overload; inline;
+    function AddPairArray(const APair: String; const AValue: array of string): TJsonWriter; overload;
+    function AddPairArray(const APair: String; const AValue: array of Integer): TJsonWriter; overload;
+    function ToJson: String; inline;
   end;
 
 implementation
 
-{ TJSONWriter }
+{ TJsonWriter }
 
-function TJSONWriter.AddPair(const APair: String; const AValue: String): TJSONWriter;
+constructor TJsonWriter.Create(const AJsonObject: TJsonBrObject);
 begin
-  Result := Self;
-  FJSON := FJSON + FJSONObject.StringToJSON(APair) + ':' + FJSONObject.ValueToJSON(AValue) + ',';
+  FJsonObject := AJsonObject;
 end;
 
-function TJSONWriter.AddPair(const APair: String;
-  const AValue: Integer): TJSONWriter;
+function TJsonWriter.BeginObject(const AValue: String): TJsonWriter;
 begin
-  Result := Self;
-  FJSON := FJSON + FJSONObject.StringToJSON(APair) + ':' + FJSONObject.ValueToJSON(AValue) + ',';
-end;
-
-function TJSONWriter.AddPair(const APair: String;
-  const AValue: TJSONWriter): TJSONWriter;
-begin
-  Result := Self;
-  FJSON := FJSON + FJSONObject.StringToJSON(APair) + ':' + AValue.ToJSON;
-end;
-
-function TJSONWriter.AddPairArray(const APair: String;
-  const AValue: array of Integer): TJSONWriter;
-var
-  LFor: Integer;
-begin
-  Result := Self;
-  FJSON := FJSON + FJSONObject.StringToJSON(APair) + ':[';
-  for LFor := Low(AValue) to High(AValue) do
-    FJSON := FJSON + FJSONObject.ValueToJSON(AValue[LFor]) + ',';
-  FJSON[Length(FJSON)] := ']';
-  FJSON := FJSON + ',';
-end;
-
-function TJSONWriter.AddPairArray(const APair: String;
-  const AValue: array of string): TJSONWriter;
-var
-  LFor: Integer;
-begin
-  Result := Self;
-  FJSON := FJSON + FJSONObject.StringToJSON(APair) + ':[';
-  for LFor := Low(AValue) to High(AValue) do
-    FJSON := FJSON + FJSONObject.ValueToJSON(AValue[LFor]) + ',';
-  FJSON[Length(FJSON)] := ']';
-  FJSON := FJSON + ',';
-end;
-
-function TJSONWriter.BeginArray: TJSONWriter;
-begin
-  Result := Self;
-  FJSON := FJSON + '[';
-end;
-
-function TJSONWriter.BeginObject(const AValue: String): TJSONWriter;
-begin
-  Result := Self;
+  _BeginJson;
   if Length(AValue) > 0 then
-    FJSON := FJSON + FJSONObject.StringToJSON(AValue) + ':{'
+    FJson.Append(FJsonObject.StringToJSON(AValue) + ':{')
   else
-    FJSON := FJSON + '{';
-end;
-
-constructor TJSONWriter.Create;
-begin
-  FJSONObject := TJSONBrObject.Create;
-end;
-
-destructor TJSONWriter.Destroy;
-begin
-  FJSONObject.Free;
-  inherited;
-end;
-
-function TJSONWriter.EndArray: TJSONWriter;
-begin
+    FJson.Append('{');
   Result := Self;
-  if FJSON[Length(FJSON)] = ',' then
-    FJSON[Length(FJSON)] := ']'
-  else
-    FJSON := FJSON + ']';
 end;
 
-function TJSONWriter.EndObject: TJSONWriter;
+function TJsonWriter.BeginArray: TJsonWriter;
 begin
+  _BeginJson;
+  FJson.Append('[');
   Result := Self;
+end;
+
+function TJsonWriter.EndObject: TJsonWriter;
+begin
+  Result := nil;
+  _BeginJson;
   // Tratamento para objeto vazio
-  if Length(FJSON) = 1 then
+  if FJson.Length = 1 then
   begin
-    if FJSON[Length(FJSON)] = '{' then
+    if FJson.Chars[FJson.Length - 1] = '{' then
     begin
-      FJSON := '{}';
+      FJson.Clear;
+      FJson.Append('{}');
       Exit;
     end;
   end;
-  FJSON[Length(FJSON)] := '}';
-  FJSON := FJSON + ',';
+  FJson.Chars[FJson.Length - 1] := '}';
+  FJson.Append(',');
+  Result := Self;
 end;
 
-function TJSONWriter.ToJSON: String;
+function TJsonWriter.EndArray: TJsonWriter;
 begin
-  if FJSON[Length(FJSON)] = ',' then
-    FJSON[Length(FJSON)] := ' ';
-  Result := TrimRight(FJSON);
-  FJSON := '';
+  _BeginJson;
+  if FJson.Chars[FJson.Length - 1] = ',' then
+    FJson.Chars[FJson.Length - 1] := ']'
+  else
+    FJson.Append(']');
+  Result := Self;
+end;
+
+function TJsonWriter.AddPair(const APair: String;
+  const AValue: String): TJsonWriter;
+begin
+  _BeginJson;
+  FJson.Append(FJsonObject.StringToJSON(APair) + ':' +
+               FJsonObject.ValueToJSON(AValue) + ',');
+  Result := Self;
+end;
+
+function TJsonWriter.AddPair(const APair: String;
+  const AValue: Integer): TJsonWriter;
+begin
+  _BeginJson;
+  FJson.Append(FJsonObject.StringToJSON(APair) + ':' +
+               FJsonObject.ValueToJSON(AValue) + ',');
+  Result := Self;
+end;
+
+function TJsonWriter.AddPair(const APair: String;
+  const AValue: TJsonWriter): TJsonWriter;
+begin
+  _BeginJson;
+  FJson.Append(FJsonObject.StringToJSON(APair) + ':' + AValue.ToJson);
+  Result := Self;
+end;
+
+function TJsonWriter.AddPairArray(const APair: String;
+  const AValue: array of Integer): TJsonWriter;
+var
+  LFor: Integer;
+begin
+  _BeginJson;
+  FJson.Append(FJsonObject.StringToJSON(APair) + ':[ ');
+  for LFor := Low(AValue) to High(AValue) do
+    FJson.Append(FJsonObject.ValueToJSON(AValue[LFor]) + ',');
+  FJson.Chars[FJson.Length - 1] := ']';
+  FJson.Append(',');
+  Result := Self;
+end;
+
+function TJsonWriter.AddPairArray(const APair: String;
+  const AValue: array of string): TJsonWriter;
+var
+  LFor: Integer;
+begin
+  _BeginJson;
+  FJson.Append(FJsonObject.StringToJSON(APair) + ':[ ');
+  for LFor := Low(AValue) to High(AValue) do
+    FJson.Append(FJsonObject.ValueToJSON(AValue[LFor]) + ',');
+  FJson.Chars[FJson.Length - 1] := ']';
+  FJson.Append(',');
+  Result := Self;
+end;
+
+function TJsonWriter.ToJson: String;
+begin
+  _BeginJson;
+  if FJson.Chars[FJson.Length - 1] = ',' then
+    FJson.Chars[FJson.Length - 1] := ' ';
+  Result := TrimRight(FJson.ToString);
+  _EndJson;
+end;
+
+procedure TJsonWriter._BeginJson;
+begin
+  if not Assigned(FJson) then
+    FJson := TStringBuilder.Create;
+end;
+
+procedure TJsonWriter._EndJson;
+begin
+  if Assigned(FJson) then
+    FJson.Free;
 end;
 
 end.

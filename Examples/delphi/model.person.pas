@@ -44,10 +44,11 @@ type
     FLastName: string;
     FAge: Integer;
     FSalary: Double;
-    FDate: TDateTime;
+    FDate: TDate;
     FPessoa: TPersonSub;
     FPessoas: TObjectList<TPersonSub>;
     FBlob: String;
+    FDateTime: TDateTime;
   public
     { Public declarations }
     constructor Create;
@@ -78,9 +79,14 @@ type
     property Salary: Double read FSalary write FSalary;
 
     [Restrictions([NotNull])]
-    [Column('Date', ftDateTime)]
+    [Column('Date', ftDate)]
     [Dictionary('Nivel','Data de aniversário','Date','','',taRightJustify)]
-    property Date: TDateTime read FDate write FDate;
+    property Date: TDate read FDate write FDate;
+
+    [Restrictions([NotNull])]
+    [Column('DateTime', ftDateTime)]
+    [Dictionary('Nivel','Data de aniversário','Date','','',taRightJustify)]
+    property DateTime: TDateTime read FDateTime write FDateTime;
 
     [Column('Imagem', ftBlob)]
     property Imagem: string read FBlob write FBlob;

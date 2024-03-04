@@ -4,7 +4,8 @@ interface
 
 uses
   StrUtils,
-  SysUtils;
+  SysUtils,
+  System.DateUtils;
 
 function DateTimeToIso8601(const AValue: TDateTime;
   const AUseISO8601DateFormat: Boolean): string;
@@ -43,8 +44,13 @@ var
   LYYYY, LMM, LDD, LHH, LMI, LSS: Cardinal;
 begin
   if AUseISO8601DateFormat then
-    Result := StrToDateTimeDef(AValue, 0)
-  else
+  begin
+    try
+      Result := System.DateUtils.ISO8601ToDate(AValue);
+    except
+      Result := 0;
+    end;
+  end else
     Result := StrToDateTimeDef(AValue, 0, JsonBrFormatSettings);
 
   if Length(AValue) = 19 then

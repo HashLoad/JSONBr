@@ -22,8 +22,10 @@ type
     Memo1: TMemo;
     Button1: TButton;
     Button2: TButton;
+    Button3: TButton;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -36,6 +38,9 @@ var
 implementation
 
 uses
+  Rest.Json,
+  System.JSON,
+  System.DateUtils,
   model.person;
 
 {$R *.dfm}
@@ -78,7 +83,8 @@ begin
     Person.LastName := 'Json';
     Person.Age := 10;
     Person.Salary := 100.10;
-    Person.Date := Now;
+    Person.Date := Now.GetDate;
+    Person.DateTime := Now;
 
     Person.Pessoa.Id := 2;
     Person.Pessoa.FirstName := 'Json 2';
@@ -106,8 +112,32 @@ begin
 
     TJSONBr.OnSetValue := nil; // Criando seu proprio tratamento
     TJSONBr.OnGetValue := nil; // Criando seu proprio tratamento
-    Memo1.Lines.Text := TJSONBr.ObjectToJsonString(Person);
 
+    var JV: TJSONValue; // not TJSONObject
+    JV := nil;
+    try
+      try
+        JV := TJSONObject.ParseJSONValue(TJSONBr.ObjectToJsonString(Person));
+        Memo1.Lines.Text := JV.Format(4);
+      except on E: Exception do
+        ShowMessage(E.Message);
+      end;
+    finally
+      FreeAndNil(JV);
+    end;
+
+  finally
+    Person.Free;
+  end;
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+var
+  Person: TPerson;
+begin
+  Person := TJsonBr.JsonToObject<TPerson>(Memo1.Lines.Text);
+  try
+    Memo1.Lines.Add(Person.FirstName);
   finally
     Person.Free;
   end;

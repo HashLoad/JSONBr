@@ -4,6 +4,7 @@ interface
 
 uses
   StrUtils,
+  DateUtils,
   SysUtils;
 
 function DateTimeToIso8601(const AValue: TDateTime;
@@ -19,17 +20,20 @@ implementation
 function DateTimeToIso8601(const AValue: TDateTime;
   const AUseISO8601DateFormat: boolean): string;
 var
-  LDatePart, LTimePart: string;
+  LDatePart: string;
+  LTimePart: string;
 begin
   Result := '';
   if AValue = 0 then
     exit;
+
   if AUseISO8601DateFormat then
     LDatePart := FormatDateTime('yyyy-mm-dd', AValue)
   else
-    LDatePart := DateToStr(AValue, JsonBrFormatSettings);
+    LDatePart := DateToStr(AValue, FormatSettings);
+
   if Frac(AValue) = 0 then
-    Result := ifThen(AUseISO8601DateFormat, LDatePart, TimeToStr(AValue, JsonBrFormatSettings))
+    Result := ifThen(AUseISO8601DateFormat, LDatePart, TimeToStr(AValue, FormatSettings))
   else
   begin
     LTimePart := FormatDateTime('hh:nn:ss', AValue);
@@ -40,25 +44,31 @@ end;
 function Iso8601ToDateTime(const AValue: string;
   const AUseISO8601DateFormat: boolean): TDateTime;
 var
-  LYYYY, LMM, LDD, LHH, LMI, LSS: Cardinal;
+  LYYYY: Integer;
+  LMM: Integer;
+  LDD: Integer;
+  LHH: Integer;
+  LMI: Integer;
+  LSS: Integer;
+  LMS: Integer;
 begin
-  if AUseISO8601DateFormat then
-    Result := StrToDateTimeDef(AValue, 0)
-  else
-    Result := StrToDateTimeDef(AValue, 0, JsonBrFormatSettings);
-
-  if Length(AValue) = 19 then
+  if not AUseISO8601DateFormat then
   begin
-    LYYYY := StrToIntDef(Copy(AValue, 1, 4), 0);
-    LMM := StrToIntDef(Copy(AValue, 6, 2), 0);
-    LDD := StrToIntDef(Copy(AValue, 9, 2), 0);
-    LHH := StrToIntDef(Copy(AValue, 12, 2), 0);
-    LMI := StrToIntDef(Copy(AValue, 15, 2), 0);
-    LSS := StrToIntDef(Copy(AValue, 18, 2), 0);
-    if (LYYYY <= 9999) and (LMM <= 12) and (LDD <= 31) and
-       (LHH < 24) and (LMI < 60) and (LSS < 60) then
-      Result := EncodeDate(LYYYY, LMM, LDD) + EncodeTime(LHH, LMI, LSS, 0);
+    Result := StrToDateTimeDef(AValue, 0);
+    exit;
   end;
+  LYYYY := 0; LMM := 0; LDD := 0; LHH := 0; LMI := 0; LSS := 0; LMS := 0;
+  if TryStrToInt(Copy(AValue, 1, 4), LYYYY) and
+     TryStrToInt(Copy(AValue, 6, 2), LMM) and
+     TryStrToInt(Copy(AValue, 9, 2), LDD) and
+     TryStrToInt(Copy(AValue, 12, 2), LHH) and
+     TryStrToInt(Copy(AValue, 15, 2), LMI) and
+     TryStrToInt(Copy(AValue, 18, 2), LSS) then
+  begin
+    Result := EncodeDateTime(LYYYY, LMM, LDD, LHH, LMI, LSS, LMS);
+  end
+  else
+    Result := 0;
 end;
 
 initialization

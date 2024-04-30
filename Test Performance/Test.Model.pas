@@ -11,29 +11,29 @@ type
   TGlossDefDTO = class
   private
     FGlossSeeAlso: TArray<String>;
-    FPara: string;
+    FPara: String;
   published
     property GlossSeeAlso: TArray<String> read FGlossSeeAlso write FGlossSeeAlso;
-    property Para: string read FPara write FPara;
+    property Para: String read FPara write FPara;
   end;
 
   TGlossEntryDTO = class
   private
-    FAbbrev: string;
-    FAcronym: string;
+    FAbbrev: String;
+    FAcronym: String;
     FGlossDef: TGlossDefDTO;
-    FGlossSee: string;
-    FGlossTerm: string;
-    FID: string;
-    FSortAs: string;
+    FGlossSee: String;
+    FGlossTerm: String;
+    FID: String;
+    FSortAs: String;
   published
-    property Abbrev: string read FAbbrev write FAbbrev;
-    property Acronym: string read FAcronym write FAcronym;
+    property Abbrev: String read FAbbrev write FAbbrev;
+    property Acronym: String read FAcronym write FAcronym;
     property GlossDef: TGlossDefDTO read FGlossDef write FGlossDef;
-    property GlossSee: string read FGlossSee write FGlossSee;
-    property GlossTerm: string read FGlossTerm write FGlossTerm;
-    property ID: string read FID write FID;
-    property SortAs: string read FSortAs write FSortAs;
+    property GlossSee: String read FGlossSee write FGlossSee;
+    property GlossTerm: String read FGlossTerm write FGlossTerm;
+    property ID: String read FID write FID;
+    property SortAs: String read FSortAs write FSortAs;
   public
     constructor Create;
     destructor Destroy; override;
@@ -52,10 +52,10 @@ type
   TGlossDivDTO = class
   private
     FGlossList: TGlossListDTO;
-    FTitle: string;
+    FTitle: String;
   published
     property GlossList: TGlossListDTO read FGlossList write FGlossList;
-    property Title: string read FTitle write FTitle;
+    property Title: String read FTitle write FTitle;
   public
     constructor Create;
     destructor Destroy; override;
@@ -64,10 +64,10 @@ type
   TGlossaryDTO = class
   private
     FGlossDiv: TGlossDivDTO;
-    FTitle: string;
+    FTitle: String;
   published
     property GlossDiv: TGlossDivDTO read FGlossDiv write FGlossDiv;
-    property Title: string read FTitle write FTitle;
+    property Title: String read FTitle write FTitle;
   public
     constructor Create;
     destructor Destroy; override;

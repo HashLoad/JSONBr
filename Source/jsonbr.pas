@@ -51,23 +51,23 @@ type
     class constructor Create;
     class destructor Destroy;
     class function ObjectToJsonString(AObject: TObject;
-      AStoreClassName: boolean = False): string; inline;
+      AStoreClassName: Boolean = False): String; inline;
     class function ObjectListToJsonString(AObjectList: TObjectList<TObject>;
-      AStoreClassName: boolean = False): string; overload; inline;
+      AStoreClassName: Boolean = False): String; overload; inline;
     class function ObjectListToJsonString<T: class, constructor>(AObjectList: TObjectList<T>;
-      AStoreClassName: boolean = False): string; overload; inline;
-    class function JsonToObject<T: class, constructor>(const AJson: string): T; overload; inline;
+      AStoreClassName: Boolean = False): String; overload; inline;
+    class function JsonToObject<T: class, constructor>(const AJson: String): T; overload; inline;
     class function JsonToObject<T: class>(const AObject: T;
-      const AJson: string): boolean; overload; inline;
-    class function JsonToObjectList<T: class, constructor>(const AJson: string): TObjectList<T>; overload; inline;
-    class function JsonToObjectList(const AJson: string; const AType: TClass): TObjectList<TObject>; overload; inline;
-    class procedure JsonToObject(const AJson: string; AObject: TObject); overload; inline;
+      const AJson: String): Boolean; overload; inline;
+    class function JsonToObjectList<T: class, constructor>(const AJson: String): TObjectList<T>; overload; inline;
+    class function JsonToObjectList(const AJson: String; const AType: TClass): TObjectList<TObject>; overload; inline;
+    class procedure JsonToObject(const AJson: String; AObject: TObject); overload; inline;
     // Write
     class function BeginObject(const AValue: String = ''): TJsonWriter; inline;
     class function BeginArray: TJsonWriter; inline;
     // Reader
-    class procedure ParseFromFile(const AFileName: string; const AUtf8: boolean = true); inline;
-    class procedure SaveJsonToFile(const AFileName: string; const AUtf8: boolean = true); inline;
+    class procedure ParseFromFile(const AFileName: String; const AUtf8: Boolean = True); inline;
+    class procedure SaveJsonToFile(const AFileName: String; const AUtf8: Boolean = True); inline;
     class function Write: TJsonWriter; inline;
     class function Reader: TJsonReader; inline;
     class function Data: TJsonData;
@@ -86,7 +86,7 @@ begin
   Result := FJsonWriter.BeginArray;
 end;
 
-class function TJsonBr.BeginObject(const AValue: string = ''): TJsonWriter;
+class function TJsonBr.BeginObject(const AValue: String = ''): TJsonWriter;
 begin
   Result := FJsonWriter.BeginObject(AValue);
 end;
@@ -111,8 +111,8 @@ begin
   Result := JsonBrFormatSettings;
 end;
 
-class procedure TJsonBr.SaveJsonToFile(const AFileName: string;
-  const AUtf8: boolean);
+class procedure TJsonBr.SaveJsonToFile(const AFileName: String;
+  const AUtf8: Boolean);
 begin
   FJsonReader.SaveJsonToFile(AFileName, AUtf8);
 end;
@@ -127,24 +127,24 @@ begin
   FJsonObject.OnGetValue := Value;
 end;
 
-class procedure TJsonBr.JsonToObject(const AJson: string; AObject: TObject);
+class procedure TJsonBr.JsonToObject(const AJson: String; AObject: TObject);
 begin
   FJsonObject.JSONToObject(AObject, AJson);
 end;
 
 class function TJsonBr.JsonToObject<T>(const AObject: T;
-  const AJson: string): boolean;
+  const AJson: String): Boolean;
 begin
   Result := FJsonObject.JSONToObject(TObject(AObject), AJson);
 end;
 
-class function TJsonBr.JsonToObject<T>(const AJson: string): T;
+class function TJsonBr.JsonToObject<T>(const AJson: String): T;
 begin
   Result := FJsonObject.JSONToObject<T>(AJson);
 end;
 
 class function TJsonBr.ObjectListToJsonString(AObjectList: TObjectList<TObject>;
-  AStoreClassName: boolean): string;
+  AStoreClassName: Boolean): String;
 var
   LFor: Integer;
   LResultBuilder: TStringBuilder;
@@ -166,7 +166,7 @@ begin
 end;
 
 class function TJsonBr.ObjectListToJsonString<T>(AObjectList: TObjectList<T>;
-  AStoreClassName: boolean): string;
+  AStoreClassName: Boolean): String;
 var
   LFor: integer;
   LResultBuilder: TStringBuilder;
@@ -188,13 +188,13 @@ begin
 end;
 
 class function TJsonBr.ObjectToJsonString(AObject: TObject;
-  AStoreClassName: boolean): string;
+  AStoreClassName: Boolean): String;
 begin
   Result := FJsonObject.ObjectToJSON(AObject, AStoreClassName);
 end;
 
-class procedure TJsonBr.ParseFromFile(const AFileName: string;
-  const AUtf8: boolean);
+class procedure TJsonBr.ParseFromFile(const AFileName: String;
+  const AUtf8: Boolean);
 begin
   FJsonReader.ParseFromFile(AFileName, AUtf8);
 end;
@@ -219,13 +219,13 @@ begin
   Result := FJsonWriter;
 end;
 
-class function TJsonBr.JsonToObjectList(const AJson: string;
+class function TJsonBr.JsonToObjectList(const AJson: String;
   const AType: TClass): TObjectList<TObject>;
 begin
   Result := FJsonObject.JsonToObjectList(AJson, AType);
 end;
 
-class function TJsonBr.JsonToObjectList<T>(const AJson: string): TObjectList<T>;
+class function TJsonBr.JsonToObjectList<T>(const AJson: String): TObjectList<T>;
 begin
   Result := FJsonObject.JsonToObjectList<T>(AJson);
 end;

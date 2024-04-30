@@ -166,8 +166,8 @@ type
     function Contains(Key: Typ): Boolean;
     function GetType(Key: Typ): TVarType;
     procedure Sort(Comparison: TJSONComparison<IMember>);
-    procedure SaveTo(Stream: TStream; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload;
-    procedure SaveTo(AFile: String; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload;
+    procedure SaveTo(Stream: TStream; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload;
+    procedure SaveTo(AFile: String; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload;
     function AsJSON(const Ident: Boolean = False; const UniversalTime: Boolean = False): String;
     property Self: T read GetSelf;
     property DataType: TDataType read GetDataType;
@@ -239,8 +239,8 @@ type
     function Contains(Key: Typ): Boolean;
     function GetType(Key: Typ): TVarType;
     procedure Sort(Comparison: TJSONComparison<IMember>); virtual; abstract;
-    procedure SaveTo(Stream: TStream; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload; virtual; abstract;
-    procedure SaveTo(AFile: String; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload; virtual; abstract;
+    procedure SaveTo(Stream: TStream; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload; virtual; abstract;
+    procedure SaveTo(AFile: String; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload; virtual; abstract;
     function AsJSON(const Ident: Boolean = False; const UniversalTime: Boolean = False): String; inline;
     property Self: T read GetSelf;
     property DataType: TDataType read GetDataType;
@@ -411,8 +411,8 @@ type
     class function ParseStream(Stream: TStream; CheckDate: Boolean = True): TSuperObject;
     class function ParseFile(FileName: String; CheckDate: Boolean = True): TSuperObject;
 
-    procedure SaveTo(Stream: TStream; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload; override;
-    procedure SaveTo(AFile: String; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload; override;
+    procedure SaveTo(Stream: TStream; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload; override;
+    procedure SaveTo(AFile: String; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload; override;
     procedure Remove(Key: String);
     function  Check(const Expr: String): Boolean;
 
@@ -468,8 +468,8 @@ type
     procedure Clear;
     property Length: Integer read GetLength;
     function GetEnumerator: TSuperEnumerator<IJSONAncestor>;
-    procedure SaveTo(Stream: TStream; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload; override;
-    procedure SaveTo(AFile: String; const Ident: Boolean = false; const UniversalTime : Boolean = false); overload; override;
+    procedure SaveTo(Stream: TStream; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload; override;
+    procedure SaveTo(AFile: String; const Ident: Boolean = False; const UniversalTime : Boolean = False); overload; override;
     procedure Sort(Comparison: TJSONComparison<IMember>); override;
     function Clone: ISuperArray;
     function AsArray: ISuperArray; override;
@@ -573,8 +573,8 @@ type
     class procedure WriteSet(Data: Pointer; Member: TRttiObject; IJSONData: ISuperArray);
     class procedure SetValue<Typ>(var Data: Pointer; Member: TRttiObject; MIdx: Typ; Val: TValue);
     class function  GetValue<Typ>(Data: Pointer; Member: TRttiObject; MIdx: Typ): TValue;
-    class function  GetMemberTypeInfo(Member: TRttiObject; const GetArray: Boolean = true): PTypeInfo; inline;
-    class function  GetMemberType(Member: TRttiObject; const GetArray: Boolean = true): TRttiType; //inline;
+    class function  GetMemberTypeInfo(Member: TRttiObject; const GetArray: Boolean = True): PTypeInfo; inline;
+    class function  GetMemberType(Member: TRttiObject; const GetArray: Boolean = True): TRttiType; //inline;
     class function  GetArrayRawData(Member: TRttiObject): Pointer;
     class procedure SetArrayRawData(Member: TRttiObject; RawData: Pointer);
     class procedure ClearArrayRawData(Member: TRttiObject);
@@ -714,7 +714,7 @@ begin
             else
                Result.Add(TJSONInteger.Create(NativeInt(PVarRec(@Args[I]).VPointer)));
           else
-            Assert(false);
+            Assert(False);
       end;
 end;
 
@@ -1309,7 +1309,7 @@ begin
     if preambleLength <> 0 then
       Result := TSuperObject.Create(enc.GetString(strm.Bytes, preambleLength, stream.Size - preambleLength), CheckDate)
     else
-      Result := TSuperObject.Create(Strm.Datastring, CheckDate);
+      Result := TSuperObject.Create(Strm.DataString, CheckDate);
   finally
     Strm.Free;
   end;
@@ -2661,7 +2661,7 @@ begin
 end;
 
 {$IFDEF SP_STREAM}
-function Base64Decode(const EncodedText: string): TBytesStream;
+function Base64Decode(const EncodedText: String): TBytesStream;
 var
   Decoder: TIdDecoderMIME;
 begin

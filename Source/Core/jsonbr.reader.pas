@@ -42,26 +42,26 @@ type
     FJsonData: TJsonData;
     FCurrentData: TJsonData;
     function _Kind: TJsonValueKind;
-    function _SplitString(const AString: string;
-      const ADelimiter: string): TArray<string>;
+    function _SplitString(const AString: String;
+      const ADelimiter: String): TArray<String>;
 //    procedure SetJsonData(const Value: TJsonData);
   public
-    function IsObject: boolean;
-    function IsArray: boolean;
-    function IsEmpty: boolean;
-    function IsNull: boolean;
-    function IsInteger: boolean;
-    function IsString: boolean;
-    function IsFloat: boolean;
-    function GetObject(const APath: TArray<string>): TJsonReader; overload;
-    function GetObject(const APath: string): TJsonReader; overload;
-    function GetArray(const AName: string): TJsonReader;
-    function GetValue<T>(const AName: string): T;
+    function IsObject: Boolean;
+    function IsArray: Boolean;
+    function IsEmpty: Boolean;
+    function IsNull: Boolean;
+    function IsInteger: Boolean;
+    function IsString: Boolean;
+    function IsFloat: Boolean;
+    function GetObject(const APath: TArray<String>): TJsonReader; overload;
+    function GetObject(const APath: String): TJsonReader; overload;
+    function GetArray(const AName: String): TJsonReader;
+    function GetValue<T>(const AName: String): T;
     function GetItem<T>(const AIndex: integer): T;
-    function ParseFromFile(const AFileName: string;
-      const AUtf8: boolean = true): TJsonReader;
-    procedure SaveJsonToFile(const AFileName: string;
-      const AUtf8: boolean = true);
+    function ParseFromFile(const AFileName: String;
+      const AUtf8: Boolean = True): TJsonReader;
+    procedure SaveJsonToFile(const AFileName: String;
+      const AUtf8: Boolean = True);
     property CurrentData: TJsonData read FCurrentData;
 //    property JsonData: TJsonData read FJsonData write SetJsonData;
    end;
@@ -70,7 +70,7 @@ implementation
 
 { TJsonReader }
 
-function TJsonReader.GetArray(const AName: string): TJsonReader;
+function TJsonReader.GetArray(const AName: String): TJsonReader;
 var
   LValue: Variant;
 begin
@@ -86,7 +86,7 @@ begin
     exit;
 end;
 
-function TJsonReader.GetObject(const APath: TArray<string>): TJsonReader;
+function TJsonReader.GetObject(const APath: TArray<String>): TJsonReader;
 var
   LFor: integer;
   LValue: Variant;
@@ -108,7 +108,7 @@ begin
   end;
 end;
 
-function TJsonReader.GetValue<T>(const AName: string): T;
+function TJsonReader.GetValue<T>(const AName: String): T;
 var
   LValue: Variant;
 begin
@@ -137,45 +137,45 @@ begin
   FCurrentData := FJsonData;
 end;
 
-function TJsonReader.GetObject(const APath: string): TJsonReader;
+function TJsonReader.GetObject(const APath: String): TJsonReader;
 var
-  LPath: TArray<string>;
+  LPath: TArray<String>;
 begin
   LPath := _SplitString(APath, '/');
   Result := GetObject(LPath);
 end;
 
-function TJsonReader.IsArray: boolean;
+function TJsonReader.IsArray: Boolean;
 begin
   Result := FJsonData.Kind = jtkArray;
 end;
 
-function TJsonReader.IsEmpty: boolean;
+function TJsonReader.IsEmpty: Boolean;
 begin
   Result := FJsonData.Count = 0;
 end;
 
-function TJsonReader.IsFloat: boolean;
+function TJsonReader.IsFloat: Boolean;
 begin
   Result := _Kind = jvkFloat;
 end;
 
-function TJsonReader.IsInteger: boolean;
+function TJsonReader.IsInteger: Boolean;
 begin
   Result := _Kind = jvkInteger;
 end;
 
-function TJsonReader.IsNull: boolean;
+function TJsonReader.IsNull: Boolean;
 begin
   Result := _Kind = jvkNull;
 end;
 
-function TJsonReader.IsObject: boolean;
+function TJsonReader.IsObject: Boolean;
 begin
   Result := FJsonData.Kind = jtkObject;
 end;
 
-function TJsonReader.IsString: boolean;
+function TJsonReader.IsString: Boolean;
 begin
   Result := _Kind = jvkString;
 end;
@@ -185,12 +185,12 @@ begin
   Result := FJsonData.DataType;
 end;
 
-function TJsonReader.ParseFromFile(const AFileName: string;
-  const AUtf8: boolean): TJsonReader;
+function TJsonReader.ParseFromFile(const AFileName: String;
+  const AUtf8: Boolean): TJsonReader;
 var
   LStream: TFileStream;
   LStreamReader: TStreamReader;
-  LJsonString: string;
+  LJsonString: String;
 begin
   Result := Self;
   LStream := TFileStream.Create(AFileName, fmOpenRead or fmShareDenyWrite);
@@ -213,15 +213,15 @@ begin
   end;
 end;
 
-procedure TJsonReader.SaveJsonToFile(const AFileName: string;
-  const AUtf8: boolean);
+procedure TJsonReader.SaveJsonToFile(const AFileName: String;
+  const AUtf8: Boolean);
 var
   LStreamWriter: TStreamWriter;
 begin
   if AUtf8 then
-    LStreamWriter := TStreamWriter.Create(AFileName, false, TEncoding.UTF8)
+    LStreamWriter := TStreamWriter.Create(AFileName, False, TEncoding.UTF8)
   else
-    LStreamWriter := TStreamWriter.Create(AFileName, false);
+    LStreamWriter := TStreamWriter.Create(AFileName, False);
   try
     LStreamWriter.Write(FJsonData.ToJson);
   finally
@@ -237,11 +237,11 @@ end;
 //  FCurrentData := Value;
 //end;
 
-function TJsonReader._SplitString(const AString: string;
-  const ADelimiter: string): TArray<string>;
+function TJsonReader._SplitString(const AString: String;
+  const ADelimiter: String): TArray<String>;
 var
   LDelimiterPos, LLastDelimiterPos: integer;
-  LPart: string;
+  LPart: String;
 begin
   LLastDelimiterPos := 1;
   SetLength(Result, 0);

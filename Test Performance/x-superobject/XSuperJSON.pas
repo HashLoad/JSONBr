@@ -82,11 +82,11 @@ type
     procedure Inc;
     procedure Dec;
 
-    function Append(const Value: string; const CRLF: Boolean = False): TJSONWriter; overload;
+    function Append(const Value: String; const CRLF: Boolean = False): TJSONWriter; overload;
     function Append(const Value: int64; const CRLF: Boolean = False): TJSONWriter; overload;
-    function AppendVal(const Value: string; const CRLF: Boolean = False): TJSONWriter; overload;
+    function AppendVal(const Value: String; const CRLF: Boolean = False): TJSONWriter; overload;
     function AppendVal(const Value: int64; const CRLF: Boolean = False): TJSONWriter; overload;
-    function ToString: string; override;
+    function ToString: String; override;
 
     property Ident: Boolean read FIdent;
     property UniversalTime: Boolean read FUniversalTime;
@@ -580,12 +580,12 @@ uses
 
 const
   FloatFormat : TFormatSettings = ( DecimalSeparator : '.' );
-  STokenTypes : array [TLexemType] of string = ('Nil',
+  STokenTypes : array [TLexemType] of String = ('Nil',
                 'String', 'Integer', 'Float', 'Null', '[', ']',
                 '(', ')', '\', ':', '.', ',',
                 '',
-                'TRUE',
-                'FALSE' );
+                'True',
+                'False' );
 
 
   optAll = [#0..#255];
@@ -604,12 +604,12 @@ const
 
 var
   JSONLexGrammar: TJSONGrammar;
-  function iff(const Bool: Boolean; _true, _false: Variant): Variant; inline;
+  function iff(const Bool: Boolean; _True, _False: Variant): Variant; inline;
   begin
     if Bool then
-       Result := _true
+       Result := _True
     else
-       Result := _false;
+       Result := _False;
   end;
 
   function ChrToUTF16(const ChrCode: Integer): String; inline;
@@ -1523,7 +1523,7 @@ end;
 
 procedure TJSONBoolean.AsJSONString(Str: TJSONWriter);
 begin
-   Str.AppendVal( String(iff( IsNull, cNull, iff( Value, 'true', 'false') )) );
+   Str.AppendVal( String(iff( IsNull, cNull, iff( Value, 'True', 'False') )) );
 end;
 
 { TJSONNull }
@@ -2050,7 +2050,7 @@ end;
 
 { TJSONWriter }
 
-function TJSONWriter.Append(const Value: string; const CRLF: Boolean = False): TJSONWriter;
+function TJSONWriter.Append(const Value: String; const CRLF: Boolean = False): TJSONWriter;
 begin
   if FIdent then
   begin
@@ -2070,7 +2070,7 @@ begin
   Result := Append(IntToStr(Value), CRLF);
 end;
 
-function TJSONWriter.AppendVal(const Value: string; const CRLF: Boolean): TJSONWriter;
+function TJSONWriter.AppendVal(const Value: String; const CRLF: Boolean): TJSONWriter;
 begin
   if CRLF then
      FData.AppendLine(Value)
@@ -2109,7 +2109,7 @@ begin
   System.Inc(FIdentOffset, IDENT_SIZE);
 end;
 
-function TJSONWriter.ToString: string;
+function TJSONWriter.ToString: String;
 begin
   Result := FData.ToString;
 end;

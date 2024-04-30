@@ -35,8 +35,8 @@ var
 
 implementation
 
-uses
-  model.person;
+//uses
+//  model.person;
 
 {$R *.dfm}
 
@@ -66,51 +66,51 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-var
-  Person: TPerson;
-  Person1: TpersonSub;
-  Person2: TpersonSub;
+//var
+//  Person: TPerson;
+//  Person1: TpersonSub;
+//  Person2: TpersonSub;
 begin
-  Person := TPerson.Create;
-  try
-    Person.Id := 1;
-    Person.FirstName := '';
-    Person.LastName := 'Json';
-    Person.Age := 10;
-    Person.Salary := 100.10;
-    Person.Date := Now;
-
-    Person.Pessoa.Id := 2;
-    Person.Pessoa.FirstName := 'Json 2';
-    Person.Pessoa.LastName := 'Parse 2';
-    Person.Pessoa.Age := 20;
-    Person.Pessoa.Salary := 200.20;
-    Person.Imagem := '12345678901234567890';
-
-    Person1 := TPersonSub.Create;
-    Person1.Id := 3;
-    Person1.FirstName := 'Json 3';
-    Person1.LastName := 'Parse 3';
-    Person1.Age := 30;
-    Person1.Salary := 300.30;
-
-    Person2 := TPersonSub.Create;
-    Person2.Id := 4;
-    Person2.FirstName := 'Json 4';
-    Person2.LastName := 'Parse 4';
-    Person2.Age := 40;
-    Person2.Salary := 400.40;
-
-    Person.Pessoas.Add(Person1);
-    Person.Pessoas.Add(Person2);
-
-    TJSONBr.OnSetValue := nil; // Criando seu proprio tratamento
-    TJSONBr.OnGetValue := nil; // Criando seu proprio tratamento
-    Memo1.Lines.Text := TJSONBr.ObjectToJsonString(Person);
-
-  finally
-    Person.Free;
-  end;
+//  Person := TPerson.Create;
+//  try
+//    Person.Id := 1;
+//    Person.FirstName := '';
+//    Person.LastName := 'Json';
+//    Person.Age := 10;
+//    Person.Salary := 100.10;
+//    Person.Date := Now;
+//
+//    Person.Pessoa.Id := 2;
+//    Person.Pessoa.FirstName := 'Json 2';
+//    Person.Pessoa.LastName := 'Parse 2';
+//    Person.Pessoa.Age := 20;
+//    Person.Pessoa.Salary := 200.20;
+//    Person.Imagem := '12345678901234567890';
+//
+//    Person1 := TPersonSub.Create;
+//    Person1.Id := 3;
+//    Person1.FirstName := 'Json 3';
+//    Person1.LastName := 'Parse 3';
+//    Person1.Age := 30;
+//    Person1.Salary := 300.30;
+//
+//    Person2 := TPersonSub.Create;
+//    Person2.Id := 4;
+//    Person2.FirstName := 'Json 4';
+//    Person2.LastName := 'Parse 4';
+//    Person2.Age := 40;
+//    Person2.Salary := 400.40;
+//
+//    Person.Pessoas.Add(Person1);
+//    Person.Pessoas.Add(Person2);
+//
+//    TJSONBr.OnSetValue := nil; // Criando seu proprio tratamento
+//    TJSONBr.OnGetValue := nil; // Criando seu proprio tratamento
+//    Memo1.Lines.Text := TJSONBr.ObjectToJsonString(Person);
+//
+//  finally
+//    Person.Free;
+//  end;
 end;
 
 end.

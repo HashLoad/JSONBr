@@ -8,8 +8,8 @@ uses
   SysUtils;
 
 function DateTimeToIso8601(const AValue: TDateTime;
-  const AUseISO8601DateFormat: Boolean): string;
-function Iso8601ToDateTime(const AValue: string;
+  const AUseISO8601DateFormat: Boolean): String;
+function Iso8601ToDateTime(const AValue: String;
   const AUseISO8601DateFormat: Boolean): TDateTime;
 
 var
@@ -18,10 +18,10 @@ var
 implementation
 
 function DateTimeToIso8601(const AValue: TDateTime;
-  const AUseISO8601DateFormat: boolean): string;
+  const AUseISO8601DateFormat: Boolean): String;
 var
-  LDatePart: string;
-  LTimePart: string;
+  LDatePart: String;
+  LTimePart: String;
 begin
   Result := '';
   if AValue = 0 then
@@ -30,10 +30,10 @@ begin
   if AUseISO8601DateFormat then
     LDatePart := FormatDateTime('yyyy-mm-dd', AValue)
   else
-    LDatePart := DateToStr(AValue, FormatSettings);
+    LDatePart := DateToStr(AValue, JsonBrFormatSettings);
 
   if Frac(AValue) = 0 then
-    Result := ifThen(AUseISO8601DateFormat, LDatePart, TimeToStr(AValue, FormatSettings))
+    Result := ifThen(AUseISO8601DateFormat, LDatePart, TimeToStr(AValue, JsonBrFormatSettings))
   else
   begin
     LTimePart := FormatDateTime('hh:nn:ss', AValue);
@@ -41,8 +41,8 @@ begin
   end;
 end;
 
-function Iso8601ToDateTime(const AValue: string;
-  const AUseISO8601DateFormat: boolean): TDateTime;
+function Iso8601ToDateTime(const AValue: String;
+  const AUseISO8601DateFormat: Boolean): TDateTime;
 var
   LYYYY: Integer;
   LMM: Integer;

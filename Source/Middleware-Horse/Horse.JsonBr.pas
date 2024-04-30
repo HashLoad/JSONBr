@@ -17,7 +17,7 @@ type
   end;
 
 function HorseJsonBr: THorseCallback; overload;
-function HorseJsonBr(const ACharset: string): THorseCallback; overload;
+function HorseJsonBr(const ACharset: String): THorseCallback; overload;
 
 procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 
@@ -26,7 +26,7 @@ implementation
 uses jsonbr;
 
 var
-  Charset: string;
+  Charset: String;
 
 function HorseJsonBr: THorseCallback;
 var
@@ -39,7 +39,7 @@ begin
   TJSONBr.FormatSettings := LFormatSettings;
 end;
 
-function HorseJsonBr(const ACharset: string): THorseCallback;
+function HorseJsonBr(const ACharset: String): THorseCallback;
 begin
   Charset := ACharset;
   Result := Middleware;

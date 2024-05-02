@@ -13,7 +13,7 @@ function Iso8601ToDateTime(const AValue: String;
   const AUseISO8601DateFormat: Boolean): TDateTime;
 
 var
-  JsonBrFormatSettings: TFormatSettings;
+  GJsonBrFormatSettings: TFormatSettings;
 
 implementation
 
@@ -30,10 +30,10 @@ begin
   if AUseISO8601DateFormat then
     LDatePart := FormatDateTime('yyyy-mm-dd', AValue)
   else
-    LDatePart := DateToStr(AValue, JsonBrFormatSettings);
+    LDatePart := DateToStr(AValue, GJsonBrFormatSettings);
 
   if Frac(AValue) = 0 then
-    Result := ifThen(AUseISO8601DateFormat, LDatePart, TimeToStr(AValue, JsonBrFormatSettings))
+    Result := ifThen(AUseISO8601DateFormat, LDatePart, TimeToStr(AValue, GJsonBrFormatSettings))
   else
   begin
     LTimePart := FormatDateTime('hh:nn:ss', AValue);
@@ -72,6 +72,6 @@ begin
 end;
 
 initialization
-  JsonBrFormatSettings := TFormatSettings.Create('en_US');
+  GJsonBrFormatSettings := TFormatSettings.Create('en_US');
 
 end.

@@ -32,6 +32,7 @@ uses
   Classes,
   Variants,
   Generics.Collections,
+  jsonbr.utils,
   jsonbr.types,
   jsonbr.writer,
   jsonbr.reader,
@@ -108,7 +109,7 @@ end;
 
 class function TJsonBr.GetFormatSettings: TFormatSettings;
 begin
-  Result := JsonBrFormatSettings;
+  Result := GJsonBrFormatSettings;
 end;
 
 class procedure TJsonBr.SaveJsonToFile(const AFileName: String;
@@ -119,7 +120,7 @@ end;
 
 class procedure TJsonBr.SetFormatSettings(const Value: TFormatSettings);
 begin
-  JsonBrFormatSettings := Value;
+  GJsonBrFormatSettings := Value;
 end;
 
 class procedure TJsonBr.SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
@@ -206,7 +207,7 @@ end;
 
 class function TJsonBr.Data: TJsonData;
 begin
-  Result := FJsonReader.CurrentData;
+//  Result := FJsonReader.CurrentData;
 end;
 
 class procedure TJsonBr.SetNotifyEventSetValue(const Value: TNotifyEventSetValue);

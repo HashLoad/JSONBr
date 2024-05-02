@@ -11,6 +11,18 @@ type
   TDynamicArrayKey = array of String;
   TDynamicArrayValue = array of Variant;
 
+  IEventMiddleware = interface
+    ['{5B68F8AF-40FD-4056-A75E-D93A55A5BD6D}']
+    procedure NotifyEventSetValue(const AInstance: TObject;
+                                  const AProperty: TRttiProperty;
+                                  var AResult: Variant;
+                                  var ABreak: Boolean);
+    procedure NotifyEventGetValue(const AInstance: TObject;
+                                  const AProperty: TRttiProperty;
+                                  const AValue: Variant;
+                                  var ABreak: Boolean);
+  end;
+
   TStringBuilderHelper = class helper for TStringBuilder
   public
     procedure ReplaceLastChar(const AChar: Char);

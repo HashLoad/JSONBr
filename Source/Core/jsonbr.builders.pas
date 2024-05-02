@@ -113,20 +113,12 @@ type
       const AVarType: TVarType); override;
   end;
 
-  TMiddlewareEvent = record
-    NotifyEventSetValue: TNotifyEventSetValue;
-    NotifyEventGetValue: TNotifyEventGetValue;
-  end;
-
   TJsonBuilder = class
   private
     class var FNotifyEventSetValue: TNotifyEventSetValue;
     class var FNotifyEventGetValue: TNotifyEventGetValue;
-    class var FMiddlwareList: TList<TMiddlewareEvent>;
+    class var FMiddlwareList: TList<IEventMiddleware>;
   private
-    class constructor Create;
-    class destructor Destroy;
-    function _GetInstanceProp(AInstance: TObject; AProperty: TRttiProperty): Variant;
     class function _ResolveValueArrayString(const AValue: Variant): TArray<String>; inline;
     class function _ResolveValueArrayInteger(const AValue: Variant): TArray<Integer>; inline;
     class function _ResolveValueArrayInt64(const AValue: Variant): TArray<int64>; inline;
@@ -135,10 +127,15 @@ type
     class function _IsBlob(const ATypeInfo: PTypeInfo): Boolean; inline;
     class function _GetValueArray(const ATypeInfo: PTypeInfo; const AValue: Variant): TValue; inline;
     class function _JsonVariantData(const AValue: Variant): TJsonData; inline;
+  private
+    function _GetInstanceProp(AInstance: TObject; AProperty: TRttiProperty): Variant;
     class procedure _SetInstanceProp(const AInstance: TObject; const AProperty: TRttiProperty; const AValue: Variant);
   public
     class var UseISO8601DateFormat: Boolean;
   public
+    class constructor Create;
+    class destructor Destroy;
+    class procedure AddMiddleware(const AEventMiddleware: IEventMiddleware);
     function ObjectToJson(const AObject: TObject; const AStoreClassName: Boolean = False): String;
     function DynArrayStringToJson(const AValue: TValue): String;
     function DynArrayIntegerToJson(const AValue: TValue): String;
@@ -293,6 +290,7 @@ var
   LObject: TObject;
   LTypeInfo: PTypeInfo;
   LBreak: Boolean;
+  LMiddleware: IEventMiddleware;
 
   function IsBoolean: Boolean;
   var
@@ -309,6 +307,15 @@ begin
   begin
     LBreak := False;
     FNotifyEventGetValue(AInstance, AProperty, Result, LBreak);
+    if LBreak then
+      Exit;
+  end;
+
+  // Middlewares GetList
+  LBreak := False;
+  for LMiddleware in FMiddlwareList do
+  begin
+    LMiddleware.NotifyEventGetValue(AInstance, AProperty, Result, LBreak);
     if LBreak then
       Exit;
   end;
@@ -415,6 +422,8 @@ var
   LBreak: Boolean;
   LTypeInfo: PTypeInfo;
   LObject: TObject;
+  LMiddleware: IEventMiddleware;
+  LValue: Variant;
 
   function IsBoolean: Boolean;
   var
@@ -427,57 +436,69 @@ var
 begin
   if (AProperty = nil) and (AInstance = nil) then
     Exit;
+
+  LValue := AValue;
   // Notify Event
+  LBreak := False;
   if Assigned(FNotifyEventSetValue) then
   begin
-    LBreak := False;
-    FNotifyEventSetValue(AInstance, AProperty, AValue, LBreak);
+    FNotifyEventSetValue(AInstance, AProperty, LValue, LBreak);
     if LBreak then
       Exit;
   end;
+
+  // Middlewares SetList
+  for LMiddleware in FMiddlwareList do
+  begin
+    LBreak := False;
+    LMiddleware.NotifyEventSetValue(AInstance, AProperty, LValue, LBreak);
+    if LBreak then
+      Exit;
+  end;
+
   LTypeInfo := AProperty.PropertyType.Handle;
   try
     case AProperty.PropertyType.TypeKind of
       tkString, tkWString, tkUString, tkWChar, tkLString, tkChar:
-        if TVarData(AValue).VType <= varNull then
+        if TVarData(LValue).VType <= varNull then
           AProperty.SetValue(AInstance, TValue.From<String>(''))
         else
-          AProperty.SetValue(AInstance, TValue.From<String>(AValue));
+          AProperty.SetValue(AInstance, TValue.From<String>(LValue));
       tkInteger, tkSet, tkInt64:
-        AProperty.SetValue(AInstance, TValue.From<Integer>(AValue));
+        AProperty.SetValue(AInstance, TValue.From<Integer>(LValue));
       tkFloat:
-        if TVarData(AValue).VType <= varNull then
+        if TVarData(LValue).VType <= varNull then
           AProperty.SetValue(AInstance, TValue.From<Double>(0.0))
         else
         if (LTypeInfo = TypeInfo(TDateTime)) or
            (LTypeInfo = TypeInfo(TDate)) or
            (LTypeInfo = TypeInfo(TTime)) then
-          AProperty.SetValue(AInstance, Iso8601ToDateTime(AValue, UseISO8601DateFormat))
+          AProperty.SetValue(AInstance, Iso8601ToDateTime(LValue, UseISO8601DateFormat))
         else
-          AProperty.SetValue(AInstance, TValue.From<Double>(AValue));
+          AProperty.SetValue(AInstance, TValue.From<Double>(LValue));
       tkVariant:
-        AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+        AProperty.SetValue(AInstance, TValue.FromVariant(LValue));
       tkRecord:
-        AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+        AProperty.SetValue(AInstance, TValue.FromVariant(LValue));
       tkClass:
         begin
           LObject := AProperty.GetValue(AInstance).AsObject;
           if LObject <> nil then
-            _JsonVariantData(AValue).ToObject(LObject);
+            _JsonVariantData(LValue).ToObject(LObject);
         end;
       tkEnumeration:
         begin
           if IsBoolean() then
-            AProperty.SetValue(AInstance, TValue.From<Boolean>(AValue))
+            AProperty.SetValue(AInstance, TValue.From<Boolean>(LValue))
           else
-            AProperty.SetValue(AInstance, TValue.FromVariant(AValue));
+            AProperty.SetValue(AInstance, TValue.FromVariant(LValue));
         end;
       tkArray, tkDynArray:
         begin
           if _IsBlob(LTypeInfo) then
 
           else
-            AProperty.SetValue(AInstance, _GetValueArray(LTypeInfo, AValue));
+            AProperty.SetValue(AInstance, _GetValueArray(LTypeInfo, LValue));
         end;
     end;
   except
@@ -486,9 +507,15 @@ begin
   end;
 end;
 
+class procedure TJsonBuilder.AddMiddleware(
+  const AEventMiddleware: IEventMiddleware);
+begin
+  FMiddlwareList.Add(AEventMiddleware);
+end;
+
 class constructor TJsonBuilder.Create;
 begin
-  FMiddlwareList := TList<TMiddlewareEvent>.Create;
+  FMiddlwareList := TList<IEventMiddleware>.Create;
 end;
 
 class destructor TJsonBuilder.Destroy;

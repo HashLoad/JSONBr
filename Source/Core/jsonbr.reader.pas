@@ -149,10 +149,13 @@ begin
     LData.Init(LJsonString);
     if Assigned(FRootNode) then
       FRootNode.Free;
-    if LData.Kind = jtkObject then
-      FRootNode := TJsonNode.Create(TJsonValueKind.jvkObject, 'Root', '', Null);
-    if LData.Kind = jtkArray then
-      FRootNode := TJsonNode.Create(TJsonValueKind.jvkArray, 'Root', '', Null);
+
+    case LData.Kind of
+      jtkObject:
+        FRootNode := TJsonNode.Create(TJsonValueKind.jvkObject, 'Root', '', Null);
+      jtkArray:
+        FRootNode := TJsonNode.Create(TJsonValueKind.jvkArray, 'Root', '', Null);
+    end;
     //
     _ParseJson('/', LData, FRootNode);
   finally

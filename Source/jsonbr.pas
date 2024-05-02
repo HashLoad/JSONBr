@@ -32,7 +32,7 @@ uses
   Classes,
   Variants,
   Generics.Collections,
-  jsonbr.utils,
+  jsonbr.types,
   jsonbr.writer,
   jsonbr.reader,
   jsonbr.builders;
@@ -40,7 +40,7 @@ uses
 type
   TJsonBr = class
   private
-    class var FJsonObject: TJsonBrObject;
+    class var FJsonBuilder: TJsonBuilder;
     class var FJsonWriter: TJsonWriter;
     class var FJsonReader: TJsonReader;
     class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static; inline;
@@ -93,14 +93,14 @@ end;
 
 class constructor TJsonBr.Create;
 begin
-  FJsonObject := TJsonBrObject.Create;
-  FJsonWriter := TJsonWriter.Create(FJsonObject);
+  FJsonBuilder := TJsonBuilder.Create;
+  FJsonWriter := TJsonWriter.Create(FJsonBuilder);
   FJsonReader := TJsonReader.Create;
 end;
 
 class destructor TJsonBr.Destroy;
 begin
-  FJsonObject.Free;
+  FJsonBuilder.Free;
   FJsonWriter.Free;
   FJsonReader.Free;
   inherited;
@@ -124,23 +124,23 @@ end;
 
 class procedure TJsonBr.SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
 begin
-  FJsonObject.OnGetValue := Value;
+  FJsonBuilder.OnGetValue := Value;
 end;
 
 class procedure TJsonBr.JsonToObject(const AJson: String; AObject: TObject);
 begin
-  FJsonObject.JSONToObject(AObject, AJson);
+  FJsonBuilder.JSONToObject(AObject, AJson);
 end;
 
 class function TJsonBr.JsonToObject<T>(const AObject: T;
   const AJson: String): Boolean;
 begin
-  Result := FJsonObject.JSONToObject(TObject(AObject), AJson);
+  Result := FJsonBuilder.JSONToObject(TObject(AObject), AJson);
 end;
 
 class function TJsonBr.JsonToObject<T>(const AJson: String): T;
 begin
-  Result := FJsonObject.JSONToObject<T>(AJson);
+  Result := FJsonBuilder.JSONToObject<T>(AJson);
 end;
 
 class function TJsonBr.ObjectListToJsonString(AObjectList: TObjectList<TObject>;
@@ -176,7 +176,7 @@ begin
     LResultBuilder.Append('[');
     for LFor := 0 to AObjectList.Count -1 do
     begin
-      LResultBuilder.Append(FJsonObject.ObjectToJSON(AObjectList.Items[LFor] as T, AStoreClassName));
+      LResultBuilder.Append(FJsonBuilder.ObjectToJSON(AObjectList.Items[LFor] as T, AStoreClassName));
       if LFor < AObjectList.Count -1 then
         LResultBuilder.Append(', ');
     end;
@@ -190,7 +190,7 @@ end;
 class function TJsonBr.ObjectToJsonString(AObject: TObject;
   AStoreClassName: Boolean): String;
 begin
-  Result := FJsonObject.ObjectToJSON(AObject, AStoreClassName);
+  Result := FJsonBuilder.ObjectToJSON(AObject, AStoreClassName);
 end;
 
 class procedure TJsonBr.ParseFromFile(const AFileName: String;
@@ -211,7 +211,7 @@ end;
 
 class procedure TJsonBr.SetNotifyEventSetValue(const Value: TNotifyEventSetValue);
 begin
-  FJsonObject.OnSetValue := Value;
+  FJsonBuilder.OnSetValue := Value;
 end;
 
 class function TJsonBr.Write: TJsonWriter;
@@ -222,12 +222,12 @@ end;
 class function TJsonBr.JsonToObjectList(const AJson: String;
   const AType: TClass): TObjectList<TObject>;
 begin
-  Result := FJsonObject.JsonToObjectList(AJson, AType);
+  Result := FJsonBuilder.JsonToObjectList(AJson, AType);
 end;
 
 class function TJsonBr.JsonToObjectList<T>(const AJson: String): TObjectList<T>;
 begin
-  Result := FJsonObject.JsonToObjectList<T>(AJson);
+  Result := FJsonBuilder.JsonToObjectList<T>(AJson);
 end;
 
 end.

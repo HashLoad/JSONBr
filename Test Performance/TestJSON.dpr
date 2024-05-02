@@ -17,14 +17,17 @@ uses
   Test.JSON in 'Test.JSON.pas',
   Test.Consts in 'Test.Consts.pas',
   Test.Model in 'Test.Model.pas',
-  jsonbr.builders in '..\Source\Core\jsonbr.builders.pas',
-  jsonbr.writer in '..\Source\Core\jsonbr.writer.pas',
   XSuperJSON in 'x-superobject\XSuperJSON.pas',
   XSuperObject in 'x-superobject\XSuperObject.pas',
   test.res_json in 'test.res_json.pas',
   test.json_br in 'test.json_br.pas',
   test.xsuper in 'test.xsuper.pas',
-  jsonbr in '..\Source\jsonbr.pas';
+  jsonbr in '..\Source\jsonbr.pas',
+  jsonbr.builders in '..\Source\Core\jsonbr.builders.pas',
+  jsonbr.reader in '..\Source\Core\jsonbr.reader.pas',
+  jsonbr.types in '..\Source\Core\jsonbr.types.pas',
+  jsonbr.utils in '..\Source\Core\jsonbr.utils.pas',
+  jsonbr.writer in '..\Source\Core\jsonbr.writer.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

@@ -336,7 +336,6 @@ end;
 function TJsonNode.ToJson: string;
 var
   LChild: TJsonNode;
-  LItem: TJsonNode;
   LBuilder: TStringBuilder;
   LCommaNeeded: Boolean;
 begin

@@ -311,11 +311,11 @@ begin
       Exit;
   end;
 
-  // Middlewares GetList
+  // Middlewares GetValue
   LBreak := False;
   for LMiddleware in FMiddlwareList do
   begin
-    LMiddleware.NotifyEventGetValue(AInstance, AProperty, Result, LBreak);
+    LMiddleware.GetValue(AInstance, AProperty, Result, LBreak);
     if LBreak then
       Exit;
   end;
@@ -447,11 +447,11 @@ begin
       Exit;
   end;
 
-  // Middlewares SetList
+  // Middlewares SetValue
   for LMiddleware in FMiddlwareList do
   begin
     LBreak := False;
-    LMiddleware.NotifyEventSetValue(AInstance, AProperty, LValue, LBreak);
+    LMiddleware.SetValue(AInstance, AProperty, LValue, LBreak);
     if LBreak then
       Exit;
   end;

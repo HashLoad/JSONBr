@@ -46,8 +46,8 @@ type
     class var FJsonReader: TJsonReader;
     class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static; inline;
     class procedure SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static; inline;
-    class function GetFormatSettings: TFormatSettings; static; inline;
     class procedure SetFormatSettings(const Value: TFormatSettings); static; inline;
+    class function GetFormatSettings: TFormatSettings; static; inline;
   public
     class constructor Create;
     class destructor Destroy;
@@ -71,9 +71,11 @@ type
     class procedure SaveJsonToFile(const AFileName: String; const AUtf8: Boolean = True); inline;
     class function Write: TJsonWriter; inline;
     class function Reader: TJsonReader; inline;
-    class function Data: TJsonData;
-    // Events GetValue and SetValue
+    // Middlewares GetValue/SetValue
+    class procedure AddMiddleware(const AEventMiddleware: IEventMiddleware);
+    {$MESSAGE WARN 'This property [OnSetValue] has been deprecated, Use middlewares instead.'}
     class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
+    {$MESSAGE WARN 'This property [OnGetValue] has been deprecated, Use middlewares instead.'}
     class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
     class property FormatSettings: TFormatSettings read GetFormatSettings write SetFormatSettings;
   end;
@@ -81,6 +83,11 @@ type
 implementation
 
 { TJSONBr }
+
+class procedure TJsonBr.AddMiddleware(const AEventMiddleware: IEventMiddleware);
+begin
+  FJsonBuilder.AddMiddleware(AEventMiddleware);
+end;
 
 class function TJsonBr.BeginArray: TJsonWriter;
 begin
@@ -203,11 +210,6 @@ end;
 class function TJsonBr.Reader: TJsonReader;
 begin
   Result := FJsonReader;
-end;
-
-class function TJsonBr.Data: TJsonData;
-begin
-//  Result := FJsonReader.CurrentData;
 end;
 
 class procedure TJsonBr.SetNotifyEventSetValue(const Value: TNotifyEventSetValue);

@@ -13,14 +13,14 @@ type
 
   IEventMiddleware = interface
     ['{5B68F8AF-40FD-4056-A75E-D93A55A5BD6D}']
-    procedure NotifyEventSetValue(const AInstance: TObject;
-                                  const AProperty: TRttiProperty;
-                                  var AResult: Variant;
-                                  var ABreak: Boolean);
-    procedure NotifyEventGetValue(const AInstance: TObject;
-                                  const AProperty: TRttiProperty;
-                                  const AValue: Variant;
-                                  var ABreak: Boolean);
+    procedure SetValue(const AInstance: TObject;
+                       const AProperty: TRttiProperty;
+                       var AResult: Variant;
+                       var ABreak: Boolean);
+    procedure GetValue(const AInstance: TObject;
+                       const AProperty: TRttiProperty;
+                       const AValue: Variant;
+                       var ABreak: Boolean);
   end;
 
   TStringBuilderHelper = class helper for TStringBuilder

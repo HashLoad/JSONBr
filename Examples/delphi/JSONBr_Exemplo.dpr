@@ -7,7 +7,8 @@ uses
   jsonbr.builders in '..\..\Source\Core\jsonbr.builders.pas',
   jsonbr.reader in '..\..\Source\Core\jsonbr.reader.pas',
   jsonbr.utils in '..\..\Source\Core\jsonbr.utils.pas',
-  jsonbr.writer in '..\..\Source\Core\jsonbr.writer.pas';
+  jsonbr.writer in '..\..\Source\Core\jsonbr.writer.pas',
+  model.person in 'model.person.pas';
 
 {$R *.res}
 

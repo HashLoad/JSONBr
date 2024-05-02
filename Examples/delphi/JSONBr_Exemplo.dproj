@@ -108,6 +108,7 @@
         <DCCReference Include="..\..\Source\Core\jsonbr.reader.pas"/>
         <DCCReference Include="..\..\Source\Core\jsonbr.utils.pas"/>
         <DCCReference Include="..\..\Source\Core\jsonbr.writer.pas"/>
+        <DCCReference Include="model.person.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -8,7 +8,7 @@ uses
   DB,
   Horse,
   JSON,
-  Horse.JsonBr;
+  Horse.JsonBr in '..\..\Source\Middleware-Horse\Horse.JsonBr.pas';
 
 type
   TMyClass = class

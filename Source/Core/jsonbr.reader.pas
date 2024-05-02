@@ -29,160 +29,100 @@ interface
 
 uses
   Rtti,
+  TypInfo,
+  StrUtils,
   SysUtils,
   Classes,
   Variants,
   Generics.Collections,
-  generics.Defaults,
+  Generics.Defaults,
+  jsonbr.types,
   jsonbr.builders;
 
 type
-  TJsonReader = class
+  TJsonNode = class
   private
-    FJsonData: TJsonData;
-    FCurrentData: TJsonData;
-    function _Kind: TJsonValueKind;
-    function _SplitString(const AString: String;
-      const ADelimiter: String): TArray<String>;
-//    procedure SetJsonData(const Value: TJsonData);
+    FName: String;
+    FField: String;
+    FValue: Variant;
+    FValueType: TJsonValueKind;
+    FChildren: TObjectList<TJsonNode>;
   public
+    constructor Create(const AValueType: TJsonValueKind;
+      const AName: String; const AField: String; const AValue: Variant);
+    destructor Destroy; override;
     function IsObject: Boolean;
     function IsArray: Boolean;
+    function IsBoolean: Boolean;
     function IsEmpty: Boolean;
     function IsNull: Boolean;
     function IsInteger: Boolean;
     function IsString: Boolean;
     function IsFloat: Boolean;
-    function GetObject(const APath: TArray<String>): TJsonReader; overload;
-    function GetObject(const APath: String): TJsonReader; overload;
-    function GetArray(const AName: String): TJsonReader;
-    function GetValue<T>(const AName: String): T;
-    function GetItem<T>(const AIndex: integer): T;
+    function ToString: String; override;
+    function ToJson: String;
+    property ValueType: TJsonValueKind read FValueType;
+    property Name: String read FName;
+    property Field: String read FField;
+    property Value: Variant read FValue;
+    property Children: TObjectList<TJsonNode> read FChildren;
+  end;
+
+  TListHelper = class helper for TList<TJsonNode>
+  public
+    function FindNode(const APredicate: TFunc<TJsonNode, Boolean>): TJsonNode;
+  end;
+
+  TJsonReader = class
+  private
+    FRootNode: TJsonNode;
+    procedure _ParseJson(const AKey: String;
+      const AData: TJsonData; const AParentNode: TJsonNode);
+    function _GetValueType(const AValue: Variant): TJsonValueKind;
+  public
+    destructor Destroy; override;
+    function GetValue(const APath: String): TJsonNode;
+    function GetRoot: TJsonNode;
+    function ToJson: String;
     function ParseFromFile(const AFileName: String;
       const AUtf8: Boolean = True): TJsonReader;
     procedure SaveJsonToFile(const AFileName: String;
       const AUtf8: Boolean = True);
-    property CurrentData: TJsonData read FCurrentData;
-//    property JsonData: TJsonData read FJsonData write SetJsonData;
    end;
 
 implementation
 
 { TJsonReader }
 
-function TJsonReader.GetArray(const AName: String): TJsonReader;
+destructor TJsonReader.Destroy;
+begin
+  FRootNode.Free;
+  inherited;
+end;
+
+function TJsonReader.GetValue(const APath: string): TJsonNode;
 var
-  LValue: Variant;
+  LFindNode: TJsonNode;
 begin
-  Result := Self;
-  if FCurrentData.Count = 0 then
-    exit;
-  LValue := FCurrentData.Value[AName];
-  if VarIsEmpty(LValue) then
-    exit;
-  FCurrentData.Clear;
-  FCurrentData := TJsonData(LValue);
-  if FCurrentData.Kind <> jtkArray then
-    exit;
+  Result := nil;
+  LFindNode := FRootNode.Children.FindNode(
+    function(ANode: TJsonNode): Boolean
+    begin
+      Result := (ANode.Name = APath);
+    end);
+  if not Assigned(LFindNode) then
+    Exit;
+  Result := LFindNode;
 end;
 
-function TJsonReader.GetObject(const APath: TArray<String>): TJsonReader;
-var
-  LFor: integer;
-  LValue: Variant;
+function TJsonReader.GetRoot: TJsonNode;
 begin
-  Result := Self;
-  FCurrentData.Clear;
-  FCurrentData := FJsonData;
-  for LFor := Low(APath) to High(APath) do
-  begin
-    if FCurrentData.Count = 0 then
-      break;
-    LValue := FCurrentData.Value[APath[LFor]];
-    if VarIsEmpty(LValue) then
-      break;
-    FCurrentData.Clear;
-    FCurrentData.Init(LValue);
-    if FCurrentData.Kind <> jtkObject then
-      break;
-  end;
+  Result := FRootNode;
 end;
 
-function TJsonReader.GetValue<T>(const AName: String): T;
-var
-  LValue: Variant;
+function TJsonReader.ToJson: String;
 begin
-  Result := Default(T);
-  if FCurrentData.Count = 0 then
-    exit;
-  LValue := FCurrentData.Value[AName];
-  if VarIsEmpty(LValue) then
-    exit;
-  Result := TValue.From(LValue).AsType<T>;
-  FCurrentData.Clear;
-  FCurrentData := FJsonData;
-end;
-
-function TJsonReader.GetItem<T>(const AIndex: integer): T;
-var
-  LValue: Variant;
-begin
-  Result := Default(T);
-  if AIndex > FCurrentData.Count then
-    exit;
-  LValue := FCurrentData.Item[AIndex];
-  if VarIsEmpty(LValue) then
-    exit;
-  Result := TValue.From(LValue).AsType<T>;
-  FCurrentData := FJsonData;
-end;
-
-function TJsonReader.GetObject(const APath: String): TJsonReader;
-var
-  LPath: TArray<String>;
-begin
-  LPath := _SplitString(APath, '/');
-  Result := GetObject(LPath);
-end;
-
-function TJsonReader.IsArray: Boolean;
-begin
-  Result := FJsonData.Kind = jtkArray;
-end;
-
-function TJsonReader.IsEmpty: Boolean;
-begin
-  Result := FJsonData.Count = 0;
-end;
-
-function TJsonReader.IsFloat: Boolean;
-begin
-  Result := _Kind = jvkFloat;
-end;
-
-function TJsonReader.IsInteger: Boolean;
-begin
-  Result := _Kind = jvkInteger;
-end;
-
-function TJsonReader.IsNull: Boolean;
-begin
-  Result := _Kind = jvkNull;
-end;
-
-function TJsonReader.IsObject: Boolean;
-begin
-  Result := FJsonData.Kind = jtkObject;
-end;
-
-function TJsonReader.IsString: Boolean;
-begin
-  Result := _Kind = jvkString;
-end;
-
-function TJsonReader._Kind: TJsonValueKind;
-begin
-  Result := FJsonData.DataType;
+  Result := FRootNode.ToJson;
 end;
 
 function TJsonReader.ParseFromFile(const AFileName: String;
@@ -191,6 +131,7 @@ var
   LStream: TFileStream;
   LStreamReader: TStreamReader;
   LJsonString: String;
+  LData: TJsonData;
 begin
   Result := Self;
   LStream := TFileStream.Create(AFileName, fmOpenRead or fmShareDenyWrite);
@@ -204,10 +145,16 @@ begin
     finally
       LStreamReader.Free;
     end;
-    FJsonData.Clear;
-    FJsonData.Init(LJsonString);
-    FCurrentData.Clear;
-    FCurrentData := FJsonData;
+    // Parse Json
+    LData.Init(LJsonString);
+    if Assigned(FRootNode) then
+      FRootNode.Free;
+    if LData.Kind = jtkObject then
+      FRootNode := TJsonNode.Create(TJsonValueKind.jvkObject, 'Root', '', Null);
+    if LData.Kind = jtkArray then
+      FRootNode := TJsonNode.Create(TJsonValueKind.jvkArray, 'Root', '', Null);
+    //
+    _ParseJson('/', LData, FRootNode);
   finally
     LStream.Free;
   end;
@@ -223,43 +170,223 @@ begin
   else
     LStreamWriter := TStreamWriter.Create(AFileName, False);
   try
-    LStreamWriter.Write(FJsonData.ToJson);
+    LStreamWriter.Write(Self.ToJson);
   finally
     LStreamWriter.Free;
   end;
 end;
 
-//procedure TJsonReader.SetJsonData(const Value: TJsonData);
-//begin
-//  FJsonData.Clear;
-//  FCurrentData.Clear;
-//  FJsonData := Value;
-//  FCurrentData := Value;
-//end;
-
-function TJsonReader._SplitString(const AString: String;
-  const ADelimiter: String): TArray<String>;
+function TJsonReader._GetValueType(const AValue: Variant): TJsonValueKind;
 var
-  LDelimiterPos, LLastDelimiterPos: integer;
-  LPart: String;
+  LValueType: Integer;
 begin
-  LLastDelimiterPos := 1;
-  SetLength(Result, 0);
-  repeat
-    LDelimiterPos := Pos(ADelimiter, AString, LLastDelimiterPos);
-    if LDelimiterPos > 0 then
-    begin
-      LPart := Copy(AString, LLastDelimiterPos, LDelimiterPos - LLastDelimiterPos);
-      LLastDelimiterPos := LDelimiterPos + Length(ADelimiter);
-    end
-    else
-      LPart := Copy(AString, LLastDelimiterPos, Length(AString));
-    if LPart <> '' then
-    begin
-      SetLength(Result, Length(Result) + 1);
-      Result[Length(Result) - 1] := LPart;
+  LValueType := VarType(AValue);
+  case LValueType of
+    varEmpty: Result := TJsonValueKind.jvkNone;
+    varNull: Result := TJsonValueKind.jvkNull;
+    varSmallint, varInteger,
+    varShortInt, varByte,
+    varWord, varLongWord,
+    varInt64: Result := TJsonValueKind.jvkInteger;
+    varSingle, varDouble,
+    varCurrency: Result := TJsonValueKind.jvkFloat;
+    varDate: Result := TJsonValueKind.jvkFloat;
+    varBoolean: Result := TJsonValueKind.jvkBoolean;
+    varString, varUString,
+    varOleStr: Result := TJsonValueKind.jvkString;
+    varObject: Result := TJsonValueKind.jvkObject;
+    varArray: Result := TJsonValueKind.jvkArray;
+  else
+     Result := TJsonValueKind.jvkNone;
+  end;
+end;
+
+procedure TJsonReader._ParseJson(const AKey: string; const AData: TJsonData;
+  const AParentNode: TJsonNode);
+var
+  LChildNode: TJsonNode;
+  LFor: Int16;
+  LKey: String;
+begin
+  for LFor := 0 to AData.Count - 1 do
+  begin
+    LKey := AKey + VarToStr(AData.Names[LFor]);
+    case TJsonData(AData.Values[LFor]).Kind of
+      TJsonTypeKind.jtkUndefined:
+      begin
+        LChildNode := TJsonNode.Create(_GetValueType(AData.Values[LFor]), LKey, VarToStr(AData.Names[LFor]), VarToStr(AData.Values[LFor]));
+        AParentNode.Children.Add(LChildNode);
+      end;
+      TJsonTypeKind.jtkObject:
+      begin
+        LChildNode := TJsonNode.Create(TJsonValueKind.jvkObject, LKey, VarToStr(AData.Names[LFor]), Null);
+        AParentNode.Children.Add(LChildNode);
+        LKey := LKey + '/';
+        //
+        _ParseJson(LKey, TJsonData(AData.Values[LFor]), LChildNode);
+      end;
+      TJsonTypeKind.jtkArray:
+      begin
+        LChildNode := TJsonNode.Create(TJsonValueKind.jvkArray, LKey, VarToStr(AData.Names[LFor]), Null);
+        AParentNode.Children.Add(LChildNode);
+        LKey := LKey + '/';
+        //
+        _ParseJson(LKey, TJsonData(AData.Values[LFor]), LChildNode);
+      end;
     end;
-  until LDelimiterPos = 0;
+  end;
+end;
+
+constructor TJsonNode.Create(const AValueType: TJsonValueKind;
+  const AName: String; const AField: String; const AValue: Variant);
+begin
+  FValueType := AValueType;
+  FName := AName;
+  FField := AField;
+  FValue := AValue;
+  FChildren := TObjectList<TJsonNode>.Create;
+end;
+
+destructor TJsonNode.Destroy;
+begin
+  FChildren.Free;
+  inherited;
+end;
+
+function TJsonNode.IsArray: Boolean;
+begin
+  Result := FValueType in [TJsonValueKind.jvkArray];
+end;
+
+function TJsonNode.IsBoolean: Boolean;
+begin
+  Result := FValueType in [TJsonValueKind.jvkBoolean];
+end;
+
+function TJsonNode.IsEmpty: Boolean;
+begin
+  Result := False;
+  if FValueType in [TJsonValueKind.jvkString] then
+    if FValue = EmptyStr then
+      Result := True;
+end;
+
+function TJsonNode.IsFloat: Boolean;
+begin
+  Result := FValueType in [TJsonValueKind.jvkFloat];
+end;
+
+function TJsonNode.IsInteger: Boolean;
+begin
+  Result := FValueType in [TJsonValueKind.jvkInteger];
+end;
+
+function TJsonNode.IsNull: Boolean;
+begin
+  Result := FValueType in [TJsonValueKind.jvkNull];
+end;
+
+function TJsonNode.IsObject: Boolean;
+begin
+  Result := FValueType in [TJsonValueKind.jvkObject];
+end;
+
+function TJsonNode.IsString: Boolean;
+begin
+  Result := FValueType in [TJsonValueKind.jvkString];
+end;
+
+function TJsonNode.ToString: String;
+var
+  LChild: TJsonNode;
+  LValue: String;
+begin
+  case FValueType of
+    jvkArray:
+    begin
+      Result := '"' + FField + '"' + ': [';
+      for LChild in FChildren do
+        Result := Result + LChild.ToString + ', ';
+      if FChildren.Count > 0 then
+        Result := Copy(Result, 1, Length(Result) - 2);
+      Result := Result + ']';
+    end;
+    jvkObject:
+    begin
+      Result := '"' + FField + '"' + ': {';
+      for LChild in FChildren do
+        Result := Result + LChild.ToString + ', ';
+      if FChildren.Count > 0 then
+        Result := Copy(Result, 1, Length(Result) - 2);
+      Result := Result + '}';
+    end;
+    else
+    begin
+      LValue := VarToStr(FValue);
+      if FValueType in [TJsonValueKind.jvkString] then
+        LValue := '"' + LValue + '"';
+      Result := '"' + FField + '"' + ': ' + LValue;
+    end;
+  end;
+end;
+
+function TJsonNode.ToJson: string;
+var
+  LChild: TJsonNode;
+  LItem: TJsonNode;
+  LBuilder: TStringBuilder;
+  LCommaNeeded: Boolean;
+begin
+  LBuilder := TStringBuilder.Create;
+  try
+    LBuilder.Append(IfThen(FValueType in [TJsonValueKind.jvkObject], '{', '['));
+    LCommaNeeded := False;
+    for LChild in FChildren do
+    begin
+      if LCommaNeeded then
+        LBuilder.Append(', ');
+
+      if not (FValueType in [TJsonValueKind.jvkArray]) then
+        LBuilder.Append('"').Append(LChild.Field).Append('": ');
+
+      if LChild.ValueType in [TJsonValueKind.jvkObject, TJsonValueKind.jvkArray] then
+        LBuilder.Append(LChild.ToJson);
+
+      if LChild.ValueType = TJsonValueKind.jvkString then
+        LBuilder.Append('"').Append(VarToStr(LChild.Value)).Append('"')
+      else
+      if LChild.ValueType = TJsonValueKind.jvkNull then
+        LBuilder.Append('null')
+      else
+      if LChild.ValueType = TJsonValueKind.jvkFloat then
+        LBuilder.Append(StringReplace(VarToStr(LChild.Value), ',', '.', [rfReplaceAll]))
+      else
+        LBuilder.Append(VarToStr(LChild.Value));
+      LCommaNeeded := True;
+    end;
+    LBuilder.Append(IfThen(FValueType in [TJsonValueKind.jvkObject], '}', ']'));
+    Result := LBuilder.ToString;
+  finally
+    LBuilder.Free;
+  end;
+end;
+
+function TListHelper.FindNode(const APredicate: TFunc<TJsonNode, Boolean>): TJsonNode;
+var
+  LNode: TJsonNode;
+begin
+  Result := nil;
+  for LNode in Self do
+  begin
+    if APredicate(LNode) then
+    begin
+      Result := LNode;
+      Exit;
+    end;
+    Result := LNode.Children.FindNode(APredicate);
+    if Assigned(Result) then
+      Exit;
+  end;
 end;
 
 end.

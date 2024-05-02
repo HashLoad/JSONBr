@@ -18,7 +18,6 @@ type
 
 function HorseJsonBr: THorseCallback; overload;
 function HorseJsonBr(const ACharset: String): THorseCallback; overload;
-
 procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: TNextProc);
 
 implementation
@@ -48,7 +47,7 @@ end;
 procedure Middleware(Req: THorseRequest; Res: THorseResponse; Next: TProc);
 begin
   if (Req.MethodType in [mtPost, mtPut, mtPatch]) and
-     (Req.RawWebRequest.ContentType.Contains('application/jsonbr')) then
+     (Req.RawWebRequest.ContentType.Contains('application/json')) then
   begin
     THorseRequest.Res := Res;
   end;
@@ -57,7 +56,7 @@ begin
     Next;
   finally
     if (Res.Content <> nil) and
-       (Req.RawWebRequest.ContentType.Contains('application/jsonbr')) then
+       (Req.RawWebRequest.ContentType.Contains('application/json')) then
     begin
       Res.RawWebResponse.Content := TJSONBr.ObjectToJsonString(Res.Content);
       Res.RawWebResponse.ContentType := 'application/json; charset=' + Charset;
@@ -75,11 +74,11 @@ begin
   Result := nil;
 
   if (MethodType in [mtPost, mtPut, mtPatch]) and
-     (RawWebRequest.ContentType.Contains('application/jsonbr')) then
+     (RawWebRequest.ContentType.Contains('application/json')) then
   begin
     LJSON := RawWebRequest.Content;
     try
-      if (LJSON.StartsWith('[') and LJSON.EndsWith(']')) then
+      if LJSON.StartsWith('[') then
         Result := T(TJSONBr.JsonToObjectList<T>(LJSON))
       else
         Result := T(TJSONBr.JsonToObject<T>(LJSON));

@@ -7,11 +7,9 @@ uses
   DB,
   Generics.Collections,
   /// orm
-  dbcbr.mapping.attributes,
   dbcbr.types.mapping,
-  dbcbr.mapping.register,
-  ormbr.types.nullable,
-  ormbr.types.blob;
+  dbcbr.mapping.attributes,
+  dbcbr.mapping.register;
 
 type
   TPersonSub = class

@@ -47,6 +47,8 @@ type
     FValue: Variant;
     FValueType: TJsonValueKind;
     FChildren: TObjectList<TJsonNode>;
+    function _FieldAsJson: String;
+    function _ValueAsJson: String;
   public
     constructor Create(const AValueType: TJsonValueKind;
       const AName: String; const AField: String; const AValue: Variant);
@@ -303,12 +305,11 @@ end;
 function TJsonNode.ToString: String;
 var
   LChild: TJsonNode;
-  LValue: String;
 begin
   case FValueType of
     TJsonValueKind.jvkArray:
     begin
-      Result := '"' + FField + '"' + ': [';
+      Result := _FieldAsJson + ': [';
       for LChild in FChildren do
         Result := Result + LChild.ToString + ', ';
       if FChildren.Count > 0 then
@@ -317,7 +318,7 @@ begin
     end;
     TJsonValueKind.jvkObject:
     begin
-      Result := '"' + FField + '"' + ': {';
+      Result := _FieldAsJson + ': {';
       for LChild in FChildren do
         Result := Result + LChild.ToString + ', ';
       if FChildren.Count > 0 then
@@ -326,15 +327,37 @@ begin
     end;
     else
     begin
-      LValue := VarToStr(FValue);
-      if FValueType in [TJsonValueKind.jvkString] then
-        LValue := '"' + LValue + '"';
-      Result := '"' + FField + '"' + ': ' + LValue;
+      Result := _FieldAsJson + ': ' + _ValueAsJson;
     end;
   end;
 end;
 
-function TJsonNode.ToJson: string;
+function TJsonNode._FieldAsJson: String;
+begin
+  Result := '"' + FField + '"';
+end;
+
+function TJsonNode._ValueAsJson: String;
+begin
+  case FValueType of
+    TJsonValueKind.jvkNone: VarToStr(FValue);
+    TJsonValueKind.jvkNull: Result := 'null';
+    TJsonValueKind.jvkString: Result := '"' + VarToStr(FValue) + '"';
+    TJsonValueKind.jvkInteger: Result := VarToStr(FValue);
+    TJsonValueKind.jvkFloat:
+      begin
+        if VarIsType(FValue, varDate) then
+          Result := '"' + VarToStr(FValue) + '"'
+        else
+          Result := StringReplace(VarToStr(FValue), ',', '.', [rfReplaceAll]);
+      end;
+    TJsonValueKind.jvkObject: Result := VarToStr(FValue);
+    TJsonValueKind.jvkArray: Result := VarToStr(FValue);
+    TJsonValueKind.jvkBoolean: Result := VarToStr(FValue);
+  end;
+end;
+
+function TJsonNode.ToJson: String;
 var
   LChild: TJsonNode;
   LBuilder: TStringBuilder;
@@ -350,21 +373,12 @@ begin
         LBuilder.Append(', ');
 
       if not (FValueType in [TJsonValueKind.jvkArray]) then
-        LBuilder.Append('"').Append(LChild.Field).Append('": ');
+        LBuilder.Append(LChild._FieldAsJson).Append(': ');
 
       if LChild.ValueType in [TJsonValueKind.jvkObject, TJsonValueKind.jvkArray] then
         LBuilder.Append(LChild.ToJson);
 
-      if LChild.ValueType = TJsonValueKind.jvkString then
-        LBuilder.Append('"').Append(VarToStr(LChild.Value)).Append('"')
-      else
-      if LChild.ValueType = TJsonValueKind.jvkNull then
-        LBuilder.Append('null')
-      else
-      if LChild.ValueType = TJsonValueKind.jvkFloat then
-        LBuilder.Append(StringReplace(VarToStr(LChild.Value), ',', '.', [rfReplaceAll]))
-      else
-        LBuilder.Append(VarToStr(LChild.Value));
+      LBuilder.Append(LChild._ValueAsJson);
       LCommaNeeded := True;
     end;
     LBuilder.Append(IfThen(FValueType in [TJsonValueKind.jvkObject], '}', ']'));

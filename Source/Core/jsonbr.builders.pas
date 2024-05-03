@@ -152,8 +152,6 @@ type
     class property OnGetValue: TNotifyEventGetValue read FNotifyEventGetValue write FNotifyEventGetValue;
   end;
 
-  TJsonBrObject = TJsonBuilder;
-
 var
   GJsonVariantType: TInvokeableVariantType;
 
@@ -470,8 +468,7 @@ begin
         if TVarData(LValue).VType <= varNull then
           AProperty.SetValue(AInstance, TValue.From<Double>(0.0))
         else
-        if (LTypeInfo = TypeInfo(TDateTime)) or
-           (LTypeInfo = TypeInfo(TDate)) or
+        if (LTypeInfo = TypeInfo(TDateTime)) or (LTypeInfo = TypeInfo(TDate)) or
            (LTypeInfo = TypeInfo(TTime)) then
           AProperty.SetValue(AInstance, Iso8601ToDateTime(LValue, UseISO8601DateFormat))
         else

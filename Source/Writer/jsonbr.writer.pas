@@ -39,12 +39,12 @@ uses
 type
   TJsonWriter = class
   private
-    FJsonObject: TJsonBuilder;
+    FJsonBuilder: TJsonBuilder;
     FJson: TStringBuilder;
     procedure _BeginJson;
     procedure _EndJson;
   public
-    constructor Create(const AJsonObject: TJsonBuilder);
+    constructor Create(const AJsonBuilder: TJsonBuilder);
     function BeginObject(const AValue: String = ''): TJsonWriter; inline;
     function BeginArray: TJsonWriter; inline;
     function EndObject: TJsonWriter; inline;
@@ -60,16 +60,16 @@ implementation
 
 { TJsonWriter }
 
-constructor TJsonWriter.Create(const AJsonObject: TJsonBuilder);
+constructor TJsonWriter.Create(const AJsonBuilder: TJsonBuilder);
 begin
-  FJsonObject := AJsonObject;
+  FJsonBuilder := AJsonBuilder;
 end;
 
 function TJsonWriter.BeginObject(const AValue: String): TJsonWriter;
 begin
   _BeginJson;
   if Length(AValue) > 0 then
-    FJson.Append(FJsonObject.StringToJSON(AValue) + ':{')
+    FJson.Append(FJsonBuilder.StringToJSON(AValue) + ':{')
   else
     FJson.Append('{');
   Result := Self;
@@ -106,8 +106,8 @@ function TJsonWriter.AddPair(const APair: String;
   const AValue: String): TJsonWriter;
 begin
   _BeginJson;
-  FJson.Append(FJsonObject.StringToJSON(APair) + ':' +
-               FJsonObject.ValueToJSON(AValue) + ',');
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
+               FJsonBuilder.ValueToJSON(AValue) + ',');
   Result := Self;
 end;
 
@@ -115,8 +115,8 @@ function TJsonWriter.AddPair(const APair: String;
   const AValue: Integer): TJsonWriter;
 begin
   _BeginJson;
-  FJson.Append(FJsonObject.StringToJSON(APair) + ':' +
-               FJsonObject.ValueToJSON(AValue) + ',');
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
+               FJsonBuilder.ValueToJSON(AValue) + ',');
   Result := Self;
 end;
 
@@ -124,7 +124,7 @@ function TJsonWriter.AddPair(const APair: String;
   const AValue: TJsonWriter): TJsonWriter;
 begin
   _BeginJson;
-  FJson.Append(FJsonObject.StringToJSON(APair) + ':' + AValue.ToJson);
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' + AValue.ToJson);
   Result := Self;
 end;
 
@@ -134,9 +134,9 @@ var
   LFor: Integer;
 begin
   _BeginJson;
-  FJson.Append(FJsonObject.StringToJSON(APair) + ':[ ');
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':[ ');
   for LFor := Low(AValue) to High(AValue) do
-    FJson.Append(FJsonObject.ValueToJSON(AValue[LFor].ToString) + ',');
+    FJson.Append(FJsonBuilder.ValueToJSON(AValue[LFor].ToString) + ',');
   if Length(AValue) > 0 then
     FJson.Length := FJson.Length - 1;
   FJson.Append(']');

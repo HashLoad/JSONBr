@@ -151,9 +151,9 @@ begin
       FRootNode.Free;
 
     case LData.Kind of
-      jtkObject:
+      TJsonTypeKind.jtkObject:
         FRootNode := TJsonNode.Create(TJsonValueKind.jvkObject, 'Root', '', Null);
-      jtkArray:
+      TJsonTypeKind.jtkArray:
         FRootNode := TJsonNode.Create(TJsonValueKind.jvkArray, 'Root', '', Null);
     end;
     //
@@ -305,7 +305,7 @@ var
   LValue: String;
 begin
   case FValueType of
-    jvkArray:
+    TJsonValueKind.jvkArray:
     begin
       Result := '"' + FField + '"' + ': [';
       for LChild in FChildren do
@@ -314,7 +314,7 @@ begin
         Result := Copy(Result, 1, Length(Result) - 2);
       Result := Result + ']';
     end;
-    jvkObject:
+    TJsonValueKind.jvkObject:
     begin
       Result := '"' + FField + '"' + ': {';
       for LChild in FChildren do

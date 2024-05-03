@@ -28,9 +28,11 @@ type
     procedure ReplaceLastChar(const AChar: Char);
   end;
 
+  {$SCOPEDENUMS ON}
   TJsonTypeKind = (jtkUndefined, jtkObject, jtkArray);
   TJsonValueKind = (jvkNone, jvkNull, jvkString, jvkInteger, jvkFloat,
                     jvkObject, jvkArray, jvkBoolean);
+  {$SCOPEDENUMS OFF}
 
   PropWrap = packed record
     FillBytes: array [0..SizeOf(pointer)-2] of byte;

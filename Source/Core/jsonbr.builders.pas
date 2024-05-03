@@ -135,7 +135,7 @@ type
   public
     class constructor Create;
     class destructor Destroy;
-    class procedure AddMiddleware(const AEventMiddleware: IEventMiddleware);
+    procedure AddMiddleware(const AEventMiddleware: IEventMiddleware);
     function ObjectToJson(const AObject: TObject; const AStoreClassName: Boolean = False): String;
     function DynArrayStringToJson(const AValue: TValue): String;
     function DynArrayIntegerToJson(const AValue: TValue): String;
@@ -171,7 +171,7 @@ function TJsonBuilder.JsonVariant(const AValues: TDynamicArrayValue): Variant;
 begin
   VarClear(Result);
   TJsonData(Result).Init;
-  TJsonData(Result).FVKind := jtkArray;
+  TJsonData(Result).FVKind := TJsonTypeKind.jtkArray;
   TJsonData(Result).FVCount := Length(AValues);
   TJsonData(Result).FValues := AValues;
 end;
@@ -302,7 +302,7 @@ var
 
 begin
   VarClear(Result);
-  // Notify Event
+  // Notify Event - deprecated
   if Assigned(FNotifyEventGetValue) then
   begin
     LBreak := False;
@@ -438,7 +438,7 @@ begin
     Exit;
 
   LValue := AValue;
-  // Notify Event
+  // Notify Event - deprecated
   LBreak := False;
   if Assigned(FNotifyEventSetValue) then
   begin
@@ -507,7 +507,7 @@ begin
   end;
 end;
 
-class procedure TJsonBuilder.AddMiddleware(
+procedure TJsonBuilder.AddMiddleware(
   const AEventMiddleware: IEventMiddleware);
 begin
   FMiddlwareList.Add(AEventMiddleware);
@@ -604,7 +604,7 @@ var
   LFor: Integer;
 begin
   LData.Init(AJson);
-  if (LData.FVKind <> jtkArray) then
+  if (LData.FVKind <> TJsonTypeKind.jtkArray) then
     Result := nil
   else
   begin
@@ -630,7 +630,7 @@ var
   LFor: Integer;
 begin
   LData.Init(AJson);
-  if (LData.FVKind <> jtkArray) then
+  if (LData.FVKind <> TJsonTypeKind.jtkArray) then
     Result := nil
   else
   begin
@@ -1101,35 +1101,35 @@ var
   LValue: Double;
   LStart, LErr: Integer;
 begin
-  Result := jvkNone;
+  Result := TJsonValueKind.jvkNone;
   case GetNextNonWhiteChar of
     'n': if Copy(FJson, FIndex, 3) = 'ull' then
          begin
            Inc(FIndex, 3);
-           Result := jvkNull;
+           Result := TJsonValueKind.jvkNull;
            AValue := Null;
          end;
     'f': if Copy(FJson, FIndex, 4) = 'alse' then
          begin
            Inc(FIndex, 4);
-           Result := jvkBoolean;
+           Result := TJsonValueKind.jvkBoolean;
            AValue := False;
          end;
     't': if Copy(FJson, FIndex, 3) = 'rue' then
          begin
            Inc(FIndex, 3);
-           Result := jvkBoolean;
+           Result := TJsonValueKind.jvkBoolean;
            AValue := True;
          end;
     '"': if GetNextString(LStr) then
          begin
-           Result := jvkString;
+           Result := TJsonValueKind.jvkString;
            AValue := LStr;
          end;
     '{': if ParseJsonObject(TJsonData(AValue)) then
-           Result := jvkObject;
+           Result := TJsonValueKind.jvkObject;
     '[': if ParseJsonArray(TJsonData(AValue)) then
-           Result := jvkArray;
+           Result := TJsonValueKind.jvkArray;
     '-', '0'..'9':
          begin
            LStart := FIndex - 1;
@@ -1146,7 +1146,7 @@ begin
            Val(LStr, LInt64, LErr);
            if LErr = 0 then
            begin
-             Result := jvkInteger;
+             Result := TJsonValueKind.jvkInteger;
              AValue := LInt64;
            end
            else
@@ -1155,7 +1155,7 @@ begin
              if LErr <> 0 then
                Exit;
              AValue := LValue;
-             Result := jvkFloat;
+             Result := TJsonValueKind.jvkFloat;
            end;
          end;
   end;
@@ -1170,7 +1170,7 @@ begin
   if not CheckNextNonWhiteChar(']') then
   begin
     repeat
-      if GetNextJson(LItem) = jvkNone then
+      if GetNextJson(LItem) = TJsonValueKind.jvkNone then
         Exit;
       AData.AddValue(LItem);
       case GetNextNonWhiteChar of
@@ -1182,7 +1182,7 @@ begin
     until False;
     SetLength(AData.FValues, AData.FVCount);
   end;
-  AData.FVKind := jtkArray;
+  AData.FVKind := TJsonTypeKind.jtkArray;
   Result := True;
 end;
 
@@ -1204,7 +1204,7 @@ begin
       else
       if not GetNextAlphaPropName(LKey) then
         Exit;
-      if GetNextJson(LItem) = jvkNone then
+      if GetNextJson(LItem) = TJsonValueKind.jvkNone then
         Exit;
       AData.AddNameValue(LKey, LItem);
       case GetNextNonWhiteChar of
@@ -1217,7 +1217,7 @@ begin
     SetLength(AData.FNames, AData.FVCount);
   end;
   SetLength(AData.FValues, AData.FVCount);
-  AData.FVKind := jtkObject;
+  AData.FVKind := TJsonTypeKind.jtkObject;
   Result := True;
 end;
 
@@ -1226,7 +1226,7 @@ end;
 procedure TJsonData.Init;
 begin
   FVType := GJsonVariantType.VarType;
-  FVKind := jtkUndefined;
+  FVKind := TJsonTypeKind.jtkUndefined;
   FVCount := 0;
   Finalize(FNames);
   Finalize(FValues);
@@ -1239,7 +1239,7 @@ begin
   Init;
   FromJson(AJson);
   if FVType = varNull then
-    FVKind := jtkObject
+    FVKind := TJsonTypeKind.jtkObject
   else
   if FVType <> GJsonVariantType.VarType then
     Init;
@@ -1248,7 +1248,7 @@ end;
 procedure TJsonData.InitFrom(const AValues: TDynamicArrayValue);
 begin
   Init;
-  FVKind := jtkArray;
+  FVKind := TJsonTypeKind.jtkArray;
   FValues := AValues;
   FVCount := Length(AValues);
 end;
@@ -1263,10 +1263,10 @@ end;
 procedure TJsonData.AddNameValue(const AName: String;
   const AValue: Variant);
 begin
-  if FVKind = jtkUndefined then
-    FVKind := jtkObject
+  if FVKind = TJsonTypeKind.jtkUndefined then
+    FVKind := TJsonTypeKind.jtkObject
   else
-  if FVKind <> jtkObject then
+  if FVKind <> TJsonTypeKind.jtkObject then
     raise EJsonBrException.CreateFmt('AddNameValue(%s) over array', [AName]);
   if FVCount <= Length(FValues) then
   begin
@@ -1280,10 +1280,10 @@ end;
 
 procedure TJsonData.AddValue(const AValue: Variant);
 begin
-  if FVKind = jtkUndefined then
-    FVKind := jtkArray
+  if FVKind = TJsonTypeKind.jtkUndefined then
+    FVKind := TJsonTypeKind.jtkArray
   else
-  if FVKind <> jtkArray then
+  if FVKind <> TJsonTypeKind.jtkArray then
     raise EJsonBrException.Create('AddValue() over object');
   if FVCount <= Length(FValues) then
   begin
@@ -1300,13 +1300,13 @@ var
   LParser: TJsonParser;
 begin
   LParser.Init(AJson, {$IFDEF NEXTGEN}2{$ELSE}1{$ENDIF});
-  Result := LParser.GetNextJson(Variant(Self)) in [jvkObject, jvkArray];
+  Result := LParser.GetNextJson(Variant(Self)) in [TJsonValueKind.jvkObject, TJsonValueKind.jvkArray];
 end;
 
 function TJsonData.GetKind: TJsonTypeKind;
 begin
   if (@Self = nil) or (FVType <> GJsonVariantType.VarType) then
-    Result := jtkUndefined
+    Result := TJsonTypeKind.jtkUndefined
   else
     Result := FVKind;
 end;
@@ -1322,24 +1322,25 @@ end;
 function TJsonData.GetDataType: TJsonValueKind;
 begin
   case VarType(FVType) of
-    varEmpty, varNull: Result := jvkNull;
-    varBoolean: Result := jvkBoolean;
-    varString, varUString, varOleStr: Result := jvkString;
-    varInteger, varSmallint, varShortint, varByte, varWord, varLongWord, varInt64: Result := jvkInteger;
-    varSingle, varDouble, varCurrency, varDate: Result := jvkFloat;
-    varDispatch: Result := jvkObject;
-    varUnknown, varError: Result := jvkNone;
-    varVariant: Result := jvkNone;
-    varArray: Result := jvkArray;
+    varEmpty, varNull: Result := TJsonValueKind.jvkNull;
+    varBoolean: Result := TJsonValueKind.jvkBoolean;
+    varString, varUString, varOleStr: Result := TJsonValueKind.jvkString;
+    varInteger, varSmallint, varShortint,
+    varByte, varWord, varLongWord, varInt64: Result := TJsonValueKind.jvkInteger;
+    varSingle, varDouble, varCurrency, varDate: Result := TJsonValueKind.jvkFloat;
+    varDispatch: Result := TJsonValueKind.jvkObject;
+    varUnknown, varError: Result := TJsonValueKind.jvkNone;
+    varVariant: Result := TJsonValueKind.jvkNone;
+    varArray: Result := TJsonValueKind.jvkArray;
   else
-    Result := jvkNone;
+    Result := TJsonValueKind.jvkNone;
   end;
 end;
 
 function TJsonData.GetValue(const AName: String): Variant;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = jtkObject) then
+  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkObject) then
     GetVarData(AName, TVarData(Result));
 end;
 
@@ -1348,7 +1349,7 @@ var
   LFor: Cardinal;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = jtkObject) then
+  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkObject) then
   begin
     LFor := Cardinal(NameIndex(AName));
     if LFor < Cardinal(Length(FValues)) then
@@ -1359,14 +1360,14 @@ end;
 function TJsonData.GetItem(AIndex: Integer): Variant;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = jtkArray) then
+  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkArray) then
     if Cardinal(AIndex) < Cardinal(FVCount) then
       Result := FValues[AIndex];
 end;
 
 procedure TJsonData.SetItem(AIndex: Integer; const AItem: Variant);
 begin
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = jtkArray) then
+  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkArray) then
     if Cardinal(AIndex) < Cardinal(FVCount) then
       FValues[AIndex] := AItem;
 end;
@@ -1428,7 +1429,7 @@ begin
   LBuilder := TStringBuilder.Create;
   try
     case FVKind of
-      jtkObject:
+      TJsonTypeKind.jtkObject:
         if FVCount = 0 then
           Result := '{}'
         else
@@ -1445,7 +1446,7 @@ begin
           LBuilder.Append('}');
           Result := LBuilder.ToString;
         end;
-      jtkArray:
+      TJsonTypeKind.jtkArray:
         if FVCount = 0 then
           Result := '[]'
         else
@@ -1496,7 +1497,7 @@ begin
   if AObject = nil then
     Exit;
   case FVKind of
-    jtkObject:
+    TJsonTypeKind.jtkObject:
       begin
         LListType := FContext.GetType(AObject.ClassType);
         if LListType <> nil then
@@ -1509,7 +1510,7 @@ begin
           end;
         end;
       end;
-    jtkArray:
+    TJsonTypeKind.jtkArray:
       begin
         if AObject.InheritsFrom(TCollection) then
         begin

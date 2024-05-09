@@ -40,14 +40,14 @@ uses
 
 type
   TJsonBr = class
-  private
+  strict private
     class var FJsonBuilder: TJsonBuilder;
     class var FJsonWriter: TJsonWriter;
     class var FJsonReader: TJsonReader;
-    class procedure SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static; inline;
-    class procedure SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static; inline;
-    class procedure SetFormatSettings(const Value: TFormatSettings); static; inline;
-    class function GetFormatSettings: TFormatSettings; static; inline;
+    class procedure _SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static; inline;
+    class procedure _SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static; inline;
+    class procedure _SetFormatSettings(const Value: TFormatSettings); static; inline;
+    class function _GetFormatSettings: TFormatSettings; static; inline;
   public
     class constructor Create;
     class destructor Destroy;
@@ -74,10 +74,10 @@ type
     // Middlewares GetValue/SetValue
     class procedure AddMiddleware(const AEventMiddleware: IEventMiddleware);
     {$MESSAGE WARN 'This property [OnSetValue] has been deprecated, Use middlewares instead.'}
-    class property OnSetValue: TNotifyEventSetValue write SetNotifyEventSetValue;
+    class property OnSetValue: TNotifyEventSetValue write _SetNotifyEventSetValue;
     {$MESSAGE WARN 'This property [OnGetValue] has been deprecated, Use middlewares instead.'}
-    class property OnGetValue: TNotifyEventGetValue write SetNotifyEventGetValue;
-    class property FormatSettings: TFormatSettings read GetFormatSettings write SetFormatSettings;
+    class property OnGetValue: TNotifyEventGetValue write _SetNotifyEventGetValue;
+    class property FormatSettings: TFormatSettings read _GetFormatSettings write _SetFormatSettings;
   end;
 
 implementation
@@ -114,7 +114,7 @@ begin
   inherited;
 end;
 
-class function TJsonBr.GetFormatSettings: TFormatSettings;
+class function TJsonBr._GetFormatSettings: TFormatSettings;
 begin
   Result := GJsonBrFormatSettings;
 end;
@@ -125,12 +125,12 @@ begin
   FJsonReader.SaveJsonToFile(AFileName, AUtf8);
 end;
 
-class procedure TJsonBr.SetFormatSettings(const Value: TFormatSettings);
+class procedure TJsonBr._SetFormatSettings(const Value: TFormatSettings);
 begin
   GJsonBrFormatSettings := Value;
 end;
 
-class procedure TJsonBr.SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
+class procedure TJsonBr._SetNotifyEventGetValue(const Value: TNotifyEventGetValue);
 begin
   FJsonBuilder.OnGetValue := Value;
 end;
@@ -212,7 +212,7 @@ begin
   Result := FJsonReader;
 end;
 
-class procedure TJsonBr.SetNotifyEventSetValue(const Value: TNotifyEventSetValue);
+class procedure TJsonBr._SetNotifyEventSetValue(const Value: TNotifyEventSetValue);
 begin
   FJsonBuilder.OnSetValue := Value;
 end;

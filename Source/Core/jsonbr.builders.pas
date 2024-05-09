@@ -50,33 +50,33 @@ type
     FVCount: Integer;
     FNames: TDynamicArrayKey;
     FValues: TDynamicArrayValue;
-    procedure SetKind(const Value: TJsonTypeKind);
-    procedure SetValue(const AName: String; const AValue: Variant);
-    procedure SetItem(AIndex: Integer; const AItem: Variant);
-    function GetKind: TJsonTypeKind;
-    function GetCount: Integer;
-    function GetVarData(const AName: String; var ADest: TVarData): Boolean;
-    function GetValueCopy(const AName: String): Variant;
-    function GetValue(const AName: String): Variant;
-    function GetItem(AIndex: Integer): Variant;
-    function GetListType(LRttiType: TRttiType): TRttiType;
-    function GetDataType: TJsonValueKind;
+    procedure _SetKind(const Value: TJsonTypeKind);
+    procedure _SetValue(const AName: String; const AValue: Variant);
+    procedure _SetItem(AIndex: Integer; const AItem: Variant);
+    function _GetKind: TJsonTypeKind;
+    function _GetCount: Integer;
+    function _GetVarData(const AName: String; var ADest: TVarData): Boolean;
+    function _GetValueCopy(const AName: String): Variant;
+    function _GetValue(const AName: String): Variant;
+    function _GetItem(AIndex: Integer): Variant;
+    function _GetListType(LRttiType: TRttiType): TRttiType;
+    function _GetDataType: TJsonValueKind;
     type
       TJsonParser = record
       private
         FJson: String;
         FIndex: Integer;
         FJsonLength: Integer;
-        function GetNextChar: Char;
-        function GetNextNonWhiteChar: Char; inline;
-        function CheckNextNonWhiteChar(AChar: Char): Boolean; inline;
-        function GetNextString(out AStr: String): Boolean;
-        function GetNextJson(out AValue: Variant): TJsonValueKind;
-        function GetNextAlphaPropName(out AFieldName: String): Boolean;
-        function ParseJsonObject(out AData: TJsonData): Boolean;
-        function ParseJsonArray(out AData: TJsonData): Boolean;
-        procedure Init(const AJson: String; AIndex: Integer = 1);
-        procedure GetNextStringUnEscape(var AStr: String);
+        function _GetNextChar: Char;
+        function _GetNextNonWhiteChar: Char; inline;
+        function _CheckNextNonWhiteChar(AChar: Char): Boolean; inline;
+        function _GetNextString(out AStr: String): Boolean;
+        function _GetNextJson(out AValue: Variant): TJsonValueKind;
+        function _GetNextAlphaPropName(out AFieldName: String): Boolean;
+        function _ParseJsonObject(out AData: TJsonData): Boolean;
+        function _ParseJsonArray(out AData: TJsonData): Boolean;
+        procedure _Init(const AJson: String; AIndex: Integer = 1);
+        procedure _GetNextStringUnEscape(var AStr: String);
       end;
   public
     function NameIndex(const AName: String): Integer;
@@ -91,12 +91,12 @@ type
     procedure Clear;
     procedure AddValue(const AValue: Variant);
     procedure AddNameValue(const AName: String; const AValue: Variant);
-    property Kind: TJsonTypeKind read GetKind write SetKind;
-    property DataType: TJsonValueKind read GetDataType;
-    property Count: Integer read GetCount;
-    property Value[const AName: String]: Variant read GetValue write SetValue; default;
-    property ValueCopy[const AName: String]: Variant read GetValueCopy;
-    property Item[AIndex: Integer]: Variant read GetItem write SetItem;
+    property Kind: TJsonTypeKind read _GetKind write _SetKind;
+    property DataType: TJsonValueKind read _GetDataType;
+    property Count: Integer read _GetCount;
+    property Value[const AName: String]: Variant read _GetValue write _SetValue; default;
+    property ValueCopy[const AName: String]: Variant read _GetValueCopy;
+    property Item[AIndex: Integer]: Variant read _GetItem write _SetItem;
   end;
 
   TJsonVariant = class(TInvokeableVariantType)
@@ -114,11 +114,11 @@ type
   end;
 
   TJsonBuilder = class
-  private
+  strict private
     class var FNotifyEventSetValue: TNotifyEventSetValue;
     class var FNotifyEventGetValue: TNotifyEventGetValue;
     class var FMiddlwareList: TList<IEventMiddleware>;
-  private
+  strict private
     class function _ResolveValueArrayString(const AValue: Variant): TArray<String>; inline;
     class function _ResolveValueArrayInteger(const AValue: Variant): TArray<Integer>; inline;
     class function _ResolveValueArrayInt64(const AValue: Variant): TArray<int64>; inline;
@@ -126,10 +126,10 @@ type
     class function _ResolveValueArrayCurrency(const AValue: Variant): TArray<currency>; inline;
     class function _IsBlob(const ATypeInfo: PTypeInfo): Boolean; inline;
     class function _GetValueArray(const ATypeInfo: PTypeInfo; const AValue: Variant): TValue; inline;
-    class function _JsonVariantData(const AValue: Variant): TJsonData; inline;
   private
     function _GetInstanceProp(AInstance: TObject; AProperty: TRttiProperty): Variant;
     class procedure _SetInstanceProp(const AInstance: TObject; const AProperty: TRttiProperty; const AValue: Variant);
+    class function _JsonVariantData(const AValue: Variant): TJsonData; inline;
   public
     class var UseISO8601DateFormat: Boolean;
   public
@@ -192,7 +192,7 @@ class function TJsonBuilder.StringToJson(const AText: String): String;
 var
   LLen, LFor: Integer;
 
-  procedure DoEscape;
+  procedure L_DoEscape;
   var
     LChr: Integer;
     LBuilder: TStringBuilder;
@@ -233,7 +233,7 @@ begin
     case AText[LFor] of
       #0 .. #31, '\', '"':
       begin
-        DoEscape;
+        L_DoEscape;
         Exit;
       end;
     end;
@@ -290,7 +290,7 @@ var
   LBreak: Boolean;
   LMiddleware: IEventMiddleware;
 
-  function IsBoolean: Boolean;
+  function L_IsBoolean: Boolean;
   var
     LTypeName: String;
   begin
@@ -362,7 +362,7 @@ begin
         end;
       tkEnumeration:
         begin
-          if IsBoolean() then
+          if L_IsBoolean() then
             Result := AProperty.GetValue(AInstance).AsBoolean
           else
             Result := GetEnumValue(LTypeInfo, AProperty.GetValue(AInstance).AsString) >= 0;
@@ -423,7 +423,7 @@ var
   LMiddleware: IEventMiddleware;
   LValue: Variant;
 
-  function IsBoolean: Boolean;
+  function L_IsBoolean: Boolean;
   var
     LTypeName: String;
   begin
@@ -485,7 +485,7 @@ begin
         end;
       tkEnumeration:
         begin
-          if IsBoolean() then
+          if L_IsBoolean() then
             AProperty.SetValue(AInstance, TValue.From<Boolean>(LValue))
           else
             AProperty.SetValue(AInstance, TValue.FromVariant(LValue));
@@ -601,22 +601,21 @@ var
   LFor: Integer;
 begin
   LData.Init(AJson);
+  Result := nil;
   if (LData.FVKind <> TJsonTypeKind.jtkArray) then
-    Result := nil
-  else
+    Exit;
+
+  Result := TObjectList<TObject>.Create;
+  //Result.OwnsObjects := True;
+  for LFor := 0 to LData.Count - 1 do
   begin
-    Result := TObjectList<TObject>.Create;
-    //Result.OwnsObjects := True;
-    for LFor := 0 to LData.Count - 1 do
+    LItem := AType.Create;
+    if not _JsonVariantData(LData.FValues[LFor]).ToObject(LItem) then
     begin
-      LItem := AType.Create;
-      if not _JsonVariantData(LData.FValues[LFor]).ToObject(LItem) then
-      begin
-        FreeAndNil(Result);
-        Exit;
-      end;
-      Result.Add(LItem);
+      Result.Free;
+      Exit;
     end;
+    Result.Add(LItem);
   end;
 end;
 
@@ -627,22 +626,21 @@ var
   LFor: Integer;
 begin
   LData.Init(AJson);
+  Result := nil;
   if (LData.FVKind <> TJsonTypeKind.jtkArray) then
-    Result := nil
-  else
+    Exit;
+
+  Result := TObjectList<T>.Create;
+  //Result.OwnsObjects := True;
+  for LFor := 0 to LData.Count - 1 do
   begin
-    Result := TObjectList<T>.Create;
-    //Result.OwnsObjects := True;
-    for LFor := 0 to LData.Count - 1 do
+    LItem := T.Create;
+    if not _JsonVariantData(LData.FValues[LFor]).ToObject(LItem) then
     begin
-      LItem := T.Create;
-      if not _JsonVariantData(LData.FValues[LFor]).ToObject(LItem) then
-      begin
-        FreeAndNil(Result);
-        Exit;
-      end;
-      Result.Add(LItem);
+      Result.Free;
+      Exit;
     end;
+    Result.Add(LItem);
   end;
 end;
 
@@ -762,8 +760,7 @@ begin
     Result := 'null';
     Exit;
   end;
-  if (Pos('TObjectList<', AObject.ClassName) > 0) or
-     (Pos('TList<', AObject.ClassName) > 0) then
+  if Pos('<', AObject.ClassName) > 0 then
   begin
     {$IFDEF DELPHI15_UP}
     LMethodToArray := LTypeInfo.GetMethod('ToArray');
@@ -936,59 +933,56 @@ end;
 
 { TJsonParser }
 
-procedure TJsonData.TJsonParser.Init(const AJson: String; AIndex: Integer);
+procedure TJsonData.TJsonParser._Init(const AJson: String; AIndex: Integer);
 begin
   FJson := AJson;
   FJsonLength := Length(FJson);
   FIndex := AIndex;
 end;
 
-function TJsonData.TJsonParser.GetNextChar: Char;
+function TJsonData.TJsonParser._GetNextChar: Char;
 begin
   Result := #0;
-  if FIndex <= FJsonLength then
-  begin
-    Result := Char(FJson[FIndex]);
-    Inc(FIndex);
-  end;
+  if FIndex > FJsonLength then
+    Exit;
+  Result := Char(FJson[FIndex]);
+  Inc(FIndex);
 end;
 
-function TJsonData.TJsonParser.GetNextNonWhiteChar: Char;
+function TJsonData.TJsonParser._GetNextNonWhiteChar: Char;
 begin
   Result := #0;
-  if FIndex <= FJsonLength then
-  begin
-    repeat
-      if FJson[FIndex] > ' ' then
-      begin
-        Result := Char(FJson[FIndex]);
-        Inc(FIndex);
-        Exit;
-      end;
+  if FIndex > FJsonLength then
+    Exit;
+  repeat
+    if FJson[FIndex] > ' ' then
+    begin
+      Result := Char(FJson[FIndex]);
       Inc(FIndex);
-    until FIndex > FJsonLength;
-  end;
+      Exit;
+    end;
+    Inc(FIndex);
+  until FIndex > FJsonLength;
 end;
 
-function TJsonData.TJsonParser.CheckNextNonWhiteChar(AChar: Char): Boolean;
+function TJsonData.TJsonParser._CheckNextNonWhiteChar(AChar: Char): Boolean;
 begin
   Result := False;
-  if FIndex <= FJsonLength then
-  begin
-    repeat
-      if FJson[FIndex] > ' ' then
-      begin
-        Result := FJson[FIndex] = AChar;
-        if Result then
-          Inc(FIndex);
-        Exit;
-      end;
-      Inc(FIndex);
-    until FIndex > FJsonLength;
-  end;
+  if FIndex > FJsonLength then
+    Exit;
+  repeat
+    if FJson[FIndex] > ' ' then
+    begin
+      Result := FJson[FIndex] = AChar;
+      if Result then
+        Inc(FIndex);
+      Exit;
+    end;
+    Inc(FIndex);
+  until FIndex > FJsonLength;
 end;
 
-procedure TJsonData.TJsonParser.GetNextStringUnEscape(var AStr: String);
+procedure TJsonData.TJsonParser._GetNextStringUnEscape(var AStr: String);
 var
   LChar: Char;
   LCopy: String;
@@ -999,12 +993,12 @@ begin
   try
     LStringBuilder.Append(AStr);
     repeat
-      LChar := GetNextChar;
+      LChar := _GetNextChar;
       case LChar of
         #0:  Exit;
         '"': Break;
         '\': begin
-             LChar := GetNextChar;
+             LChar := _GetNextChar;
              case LChar of
                #0 : Exit;
                'b': LStringBuilder.Append(#08);
@@ -1037,7 +1031,7 @@ begin
   end;
 end;
 
-function TJsonData.TJsonParser.GetNextString(out AStr: String): Boolean;
+function TJsonData.TJsonParser._GetNextString(out AStr: String): Boolean;
 var
   LFor: Integer;
 begin
@@ -1054,7 +1048,7 @@ begin
       '\': begin // need unescaping
              AStr := Copy(FJson, FIndex, LFor - FIndex);
              FIndex := LFor;
-             GetNextStringUnEscape(AStr);
+             _GetNextStringUnEscape(AStr);
              Result := True;
              Exit;
            end;
@@ -1062,7 +1056,7 @@ begin
   end;
 end;
 
-function TJsonData.TJsonParser.GetNextAlphaPropName(out AFieldName: String): Boolean;
+function TJsonData.TJsonParser._GetNextAlphaPropName(out AFieldName: String): Boolean;
 var
   LFor: Integer;
 begin
@@ -1073,6 +1067,7 @@ begin
                                                             Ord('$')]) then
     Exit;
   for LFor := FIndex + 1 to FJsonLength do
+  begin
     case Ord(FJson[LFor]) of
          Ord('0') .. Ord('9'),
          Ord('A') .. Ord('Z'),
@@ -1089,9 +1084,10 @@ begin
     else
       Exit;
     end;
+  end;
 end;
 
-function TJsonData.TJsonParser.GetNextJson(out AValue: Variant): TJsonValueKind;
+function TJsonData.TJsonParser._GetNextJson(out AValue: Variant): TJsonValueKind;
 var
   LStr: String;
   LInt64: Int64;
@@ -1099,7 +1095,7 @@ var
   LStart, LErr: Integer;
 begin
   Result := TJsonValueKind.jvkNone;
-  case GetNextNonWhiteChar of
+  case _GetNextNonWhiteChar of
     'n': if Copy(FJson, FIndex, 3) = 'ull' then
          begin
            Inc(FIndex, 3);
@@ -1118,14 +1114,14 @@ begin
            Result := TJsonValueKind.jvkBoolean;
            AValue := True;
          end;
-    '"': if GetNextString(LStr) then
+    '"': if _GetNextString(LStr) then
          begin
            Result := TJsonValueKind.jvkString;
            AValue := LStr;
          end;
-    '{': if ParseJsonObject(TJsonData(AValue)) then
+    '{': if _ParseJsonObject(TJsonData(AValue)) then
            Result := TJsonValueKind.jvkObject;
-    '[': if ParseJsonArray(TJsonData(AValue)) then
+    '[': if _ParseJsonArray(TJsonData(AValue)) then
            Result := TJsonValueKind.jvkArray;
     '-', '0'..'9':
          begin
@@ -1158,19 +1154,19 @@ begin
   end;
 end;
 
-function TJsonData.TJsonParser.ParseJsonArray(out AData: TJsonData): Boolean;
+function TJsonData.TJsonParser._ParseJsonArray(out AData: TJsonData): Boolean;
 var
   LItem: Variant;
 begin
   Result := False;
   AData.Init;
-  if not CheckNextNonWhiteChar(']') then
+  if not _CheckNextNonWhiteChar(']') then
   begin
     repeat
-      if GetNextJson(LItem) = TJsonValueKind.jvkNone then
+      if _GetNextJson(LItem) = TJsonValueKind.jvkNone then
         Exit;
       AData.AddValue(LItem);
-      case GetNextNonWhiteChar of
+      case _GetNextNonWhiteChar of
         ',': Continue;
         ']': Break;
       else
@@ -1183,28 +1179,28 @@ begin
   Result := True;
 end;
 
-function TJsonData.TJsonParser.ParseJsonObject(out AData: TJsonData): Boolean;
+function TJsonData.TJsonParser._ParseJsonObject(out AData: TJsonData): Boolean;
 var
   LKey: String;
   LItem: Variant;
 begin
   Result := False;
   AData.Init;
-  if not CheckNextNonWhiteChar('}') then
+  if not _CheckNextNonWhiteChar('}') then
   begin
     repeat
-      if CheckNextNonWhiteChar('"') then
+      if _CheckNextNonWhiteChar('"') then
       begin
-        if (not GetNextString(LKey)) or (GetNextNonWhiteChar <> ':') then
+        if (not _GetNextString(LKey)) or (_GetNextNonWhiteChar <> ':') then
           Exit;
       end
       else
-      if not GetNextAlphaPropName(LKey) then
+      if not _GetNextAlphaPropName(LKey) then
         Exit;
-      if GetNextJson(LItem) = TJsonValueKind.jvkNone then
+      if _GetNextJson(LItem) = TJsonValueKind.jvkNone then
         Exit;
       AData.AddNameValue(LKey, LItem);
-      case GetNextNonWhiteChar of
+      case _GetNextNonWhiteChar of
         ',': Continue;
         '}': Break;
       else
@@ -1296,27 +1292,25 @@ function TJsonData.FromJson(const AJson: String): Boolean;
 var
   LParser: TJsonParser;
 begin
-  LParser.Init(AJson, {$IFDEF NEXTGEN}2{$ELSE}1{$ENDIF});
-  Result := LParser.GetNextJson(Variant(Self)) in [TJsonValueKind.jvkObject, TJsonValueKind.jvkArray];
+  LParser._Init(AJson, {$IFDEF NEXTGEN}2{$ELSE}1{$ENDIF});
+  Result := LParser._GetNextJson(Variant(Self)) in [TJsonValueKind.jvkObject, TJsonValueKind.jvkArray];
 end;
 
-function TJsonData.GetKind: TJsonTypeKind;
+function TJsonData._GetKind: TJsonTypeKind;
 begin
+  Result := FVKind;
   if (@Self = nil) or (FVType <> GJsonVariantType.VarType) then
     Result := TJsonTypeKind.jtkUndefined
-  else
-    Result := FVKind;
 end;
 
-function TJsonData.GetCount: Integer;
+function TJsonData._GetCount: Integer;
 begin
+  Result := FVCount;
   if (@Self = nil) or (FVType <> GJsonVariantType.VarType) then
     Result := 0
-  else
-    Result := FVCount;
 end;
 
-function TJsonData.GetDataType: TJsonValueKind;
+function TJsonData._GetDataType: TJsonValueKind;
 begin
   case VarType(FVType) of
     varEmpty, varNull: Result := TJsonValueKind.jvkNull;
@@ -1334,14 +1328,14 @@ begin
   end;
 end;
 
-function TJsonData.GetValue(const AName: String): Variant;
+function TJsonData._GetValue(const AName: String): Variant;
 begin
   VarClear(Result);
   if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkObject) then
-    GetVarData(AName, TVarData(Result));
+    _GetVarData(AName, TVarData(Result));
 end;
 
-function TJsonData.GetValueCopy(const AName: String): Variant;
+function TJsonData._GetValueCopy(const AName: String): Variant;
 var
   LFor: Cardinal;
 begin
@@ -1354,7 +1348,7 @@ begin
   end;
 end;
 
-function TJsonData.GetItem(AIndex: Integer): Variant;
+function TJsonData._GetItem(AIndex: Integer): Variant;
 begin
   VarClear(Result);
   if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkArray) then
@@ -1362,31 +1356,29 @@ begin
       Result := FValues[AIndex];
 end;
 
-procedure TJsonData.SetItem(AIndex: Integer; const AItem: Variant);
+procedure TJsonData._SetItem(AIndex: Integer; const AItem: Variant);
 begin
   if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkArray) then
     if Cardinal(AIndex) < Cardinal(FVCount) then
       FValues[AIndex] := AItem;
 end;
 
-procedure TJsonData.SetKind(const Value: TJsonTypeKind);
+procedure TJsonData._SetKind(const Value: TJsonTypeKind);
 begin
   FVKind := Value;
 end;
 
-function TJsonData.GetVarData(const AName: String; var ADest: TVarData): Boolean;
+function TJsonData._GetVarData(const AName: String; var ADest: TVarData): Boolean;
 var
   LFor: Cardinal;
 begin
+  Result := False;
   LFor := Cardinal(NameIndex(AName));
-  if LFor < Cardinal(Length(FValues)) then
-  begin
-    ADest.VType := varVariant or varByRef;
-    ADest.VPointer := @FValues[LFor];
-    Result := True;
-  end
-  else
-    Result := False;
+  if LFor > Cardinal(Length(FValues)) then
+    Exit;
+  ADest.VType := varVariant or varByRef;
+  ADest.VPointer := @FValues[LFor];
+  Result := True;
 end;
 
 function TJsonData.NameIndex(const AName: String): Integer;
@@ -1403,7 +1395,7 @@ begin
   Result := FNames;
 end;
 
-procedure TJsonData.SetValue(const AName: String; const AValue: Variant);
+procedure TJsonData._SetValue(const AName: String; const AValue: Variant);
 var
   LFor: Integer;
 begin
@@ -1458,8 +1450,8 @@ begin
           LBuilder.Append(']');
           Result := LBuilder.ToString;
         end;
-    else
-      Result := 'null';
+      else
+        Result := 'null';
     end;
   finally
     LBuilder.Free;
@@ -1475,7 +1467,7 @@ var
   LProperty: TRttiProperty;
   LObjectType: TObject;
 
-  function MethodCall(const AObject: TObject; const AMethodName: String;
+  function L_MethodCall(const AObject: TObject; const AMethodName: String;
     const AParameters: array of TValue): TValue;
   var
     LRttiType: TRttiType;
@@ -1521,6 +1513,7 @@ begin
         end
         else
         if AObject.InheritsFrom(TStrings) then
+        begin
           try
             TStrings(AObject).BeginUpdate;
             TStrings(AObject).Clear;
@@ -1529,29 +1522,29 @@ begin
           finally
             TStrings(AObject).EndUpdate;
           end
+        end
         else
-        if (Pos('TObjectList<', AObject.ClassName) > 0) or
-           (Pos('TList<', AObject.ClassName) > 0) then
+        if Pos('<', AObject.ClassName) > 0 then
         begin
           LListType := FContext.GetType(AObject.ClassType);
-          LListType := GetListType(LListType);
+          LListType := _GetListType(LListType);
           if LListType.IsInstance then
           begin
             for LFor := 0 to FVCount - 1 do
             begin
               LObjectType := LListType.AsInstance.MetaclassType.Create;
-              MethodCall(LObjectType, 'Create', []);
+              L_MethodCall(LObjectType, 'Create', []);
               if not TJsonBuilder._JsonVariantData(FValues[LFor]).ToObject(LObjectType) then
                 Exit;
-              MethodCall(AObject, 'Add', [LObjectType]);
+              L_MethodCall(AObject, 'Add', [LObjectType]);
             end;
           end;
         end
         else
           Exit;
       end;
-  else
-    Exit;
+    else
+      Exit;
   end;
   Result := True;
 end;
@@ -1561,22 +1554,28 @@ begin
   Result := FValues;
 end;
 
-function TJsonData.GetListType(LRttiType: TRttiType): TRttiType;
+function TJsonData._GetListType(LRttiType: TRttiType): TRttiType;
 var
   LTypeName: String;
   LContext: TRttiContext;
+  LPosI: Int16;
+  LPosF: Int16;
 begin
-   LContext := TRttiContext.Create;
-   try
-     LTypeName := LRttiType.ToString;
-     LTypeName := StringReplace(LTypeName,'TObjectList<','',[]);
-     LTypeName := StringReplace(LTypeName,'TList<','',[]);
-     LTypeName := StringReplace(LTypeName,'>','',[]);
-     //
-     Result := LContext.FindType(LTypeName);
-   finally
-     LContext.Free;
-   end;
+  Result := nil;
+  LContext := TRttiContext.Create;
+  try
+    LTypeName := LRttiType.ToString;
+    LPosI := Pos('<', LTypeName);
+    if LPosI < 0 then
+      Exit;
+    LPosF := PosEx('>', LTypeName, LPosI);
+    if LPosF < 0 then
+      Exit;
+    LTypeName := Copy(LTypeName, LPosI + 1, LPosF - LPosI - 1);
+    Result := LContext.FindType(LTypeName);
+  finally
+    LContext.Free;
+  end;
 end;
 
 { TJsonVariant }
@@ -1617,7 +1616,7 @@ end;
 function TJsonVariant.GetProperty(var ADest: TVarData; const AVarData: TVarData;
   const AName: String): Boolean;
 begin
-  if not TJsonData(AVarData).GetVarData(AName, ADest) then
+  if not TJsonData(AVarData)._GetVarData(AName, ADest) then
     ADest.VType := varNull;
   Result := True;
 end;
@@ -1625,7 +1624,7 @@ end;
 function TJsonVariant.SetProperty(const AVarData: TVarData; const AName: String;
   const AValue: TVarData): Boolean;
 begin
-  TJsonData(AVarData).SetValue(AName, Variant(AValue));
+  TJsonData(AVarData)._SetValue(AName, Variant(AValue));
   Result := True;
 end;
 

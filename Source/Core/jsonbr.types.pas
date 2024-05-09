@@ -23,11 +23,6 @@ type
                        var ABreak: Boolean);
   end;
 
-  TStringBuilderHelper = class helper for TStringBuilder
-  public
-    procedure ReplaceLastChar(const AChar: Char);
-  end;
-
   {$SCOPEDENUMS ON}
   TJsonTypeKind = (jtkUndefined, jtkObject, jtkArray);
   TJsonValueKind = (jvkNone, jvkNull, jvkString, jvkInteger, jvkFloat,
@@ -47,6 +42,12 @@ type
                                    const AProperty: TRttiProperty;
                                    const AValue: Variant;
                                    var ABreak: Boolean) of object;
+
+  TStringBuilderHelper = class helper for TStringBuilder
+  public
+    procedure ReplaceLastChar(const AChar: Char);
+  end;
+
 implementation
 
 { TStringBuilderHelper }

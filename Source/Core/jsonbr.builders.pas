@@ -760,7 +760,7 @@ begin
     Result := 'null';
     Exit;
   end;
-  if Pos('<', AObject.ClassName) > 0 then
+  if Pos('List<', AObject.ClassName) > 0 then
   begin
     {$IFDEF DELPHI15_UP}
     LMethodToArray := LTypeInfo.GetMethod('ToArray');
@@ -1524,7 +1524,7 @@ begin
           end
         end
         else
-        if Pos('<', AObject.ClassName) > 0 then
+        if Pos('List<', AObject.ClassName) > 0 then
         begin
           LListType := FContext.GetType(AObject.ClassType);
           LListType := _GetListType(LListType);

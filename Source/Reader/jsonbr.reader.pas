@@ -15,7 +15,8 @@
        arquivo LICENSE na pasta principal.
 }
 
-{ @abstract(JSONBr Framework)
+{
+  @abstract(JSONBr Framework)
   @created(23 Nov 2020)
   @author(Isaque Pinheiro <isaquepsp@gmail.com>)
   @author(Telegram : @IsaquePinheiro)
@@ -40,15 +41,47 @@ uses
   jsonbr.builders;
 
 type
-  TJsonNode = class
+  IJsonNode = interface
+    ['{690A8A8B-2C76-4F3C-A544-F2A34F4F9BF8}']
+    function _FieldAsJson: String;
+    function _ValueAsJson: String;
+    function _GetChildren: TList<IJsonNode>;
+    function _GetField: String;
+    function _GetName: String;
+    function _GetValue: Variant;
+    function _GetValueType: TJsonValueKind;
+    //
+    function IsObject: Boolean;
+    function IsArray: Boolean;
+    function IsBoolean: Boolean;
+    function IsEmpty: Boolean;
+    function IsNull: Boolean;
+    function IsInteger: Boolean;
+    function IsString: Boolean;
+    function IsFloat: Boolean;
+    function ToString: String;
+    function ToJson: String;
+    property ValueType: TJsonValueKind read _GetValueType;
+    property Name: String read _GetName;
+    property Field: String read _GetField;
+    property Value: Variant read _GetValue;
+    property Children: TList<IJsonNode> read _GetChildren;
+  end;
+
+  TJsonNode = class(TInterfacedObject, IJsonNode)
   private
     FName: String;
     FField: String;
     FValue: Variant;
     FValueType: TJsonValueKind;
-    FChildren: TObjectList<TJsonNode>;
+    FChildren: TList<IJsonNode>;
     function _FieldAsJson: String;
     function _ValueAsJson: String;
+    function _GetChildren: TList<IJsonNode>;
+    function _GetField: String;
+    function _GetName: String;
+    function _GetValue: Variant;
+    function _GetValueType: TJsonValueKind;
   public
     constructor Create(const AValueType: TJsonValueKind;
       const AName: String; const AField: String; const AValue: Variant);
@@ -63,31 +96,37 @@ type
     function IsFloat: Boolean;
     function ToString: String; override;
     function ToJson: String;
-    property ValueType: TJsonValueKind read FValueType;
-    property Name: String read FName;
-    property Field: String read FField;
-    property Value: Variant read FValue;
-    property Children: TObjectList<TJsonNode> read FChildren;
   end;
 
-  TListHelper = class helper for TList<TJsonNode>
+  TListHelper = class helper for TList<IJsonNode>
   public
-    function FindNode(const APredicate: TFunc<TJsonNode, Boolean>): TJsonNode;
+    function FindNode(const APredicate: TFunc<IJsonNode, Boolean>): IJsonNode;
   end;
 
-  TJsonReader = class
+  IJsonReader = interface
+    ['{AADC5491-FCF8-4E02-B43D-30336CCAF51C}']
+    function GetValue(const APath: String): IJsonNode;
+    function GetRoot: IJsonNode;
+    function ToJson: String;
+    function ParseFromFile(const AFileName: String;
+      const AUtf8: Boolean = True): IJsonReader;
+    procedure SaveJsonToFile(const AFileName: String;
+      const AUtf8: Boolean = True);
+  end;
+
+  TJsonReader = class(TInterfacedObject, IJsonReader)
   private
-    FRootNode: TJsonNode;
+    FRootNode: IJsonNode;
     procedure _ParseJson(const AKey: String;
-      const AData: TJsonData; const AParentNode: TJsonNode);
+      const AData: TJsonData; const AParentNode: IJsonNode);
     function _GetValueType(const AValue: Variant): TJsonValueKind;
   public
     destructor Destroy; override;
-    function GetValue(const APath: String): TJsonNode;
-    function GetRoot: TJsonNode;
+    function GetValue(const APath: String): IJsonNode;
+    function GetRoot: IJsonNode;
     function ToJson: String;
     function ParseFromFile(const AFileName: String;
-      const AUtf8: Boolean = True): TJsonReader;
+      const AUtf8: Boolean = True): IJsonReader;
     procedure SaveJsonToFile(const AFileName: String;
       const AUtf8: Boolean = True);
    end;
@@ -98,17 +137,16 @@ implementation
 
 destructor TJsonReader.Destroy;
 begin
-  FRootNode.Free;
   inherited;
 end;
 
-function TJsonReader.GetValue(const APath: string): TJsonNode;
+function TJsonReader.GetValue(const APath: string): IJsonNode;
 var
-  LFindNode: TJsonNode;
+  LFindNode: IJsonNode;
 begin
   Result := nil;
   LFindNode := FRootNode.Children.FindNode(
-    function(ANode: TJsonNode): Boolean
+    function(ANode: IJsonNode): Boolean
     begin
       Result := (ANode.Name = APath);
     end);
@@ -117,7 +155,7 @@ begin
   Result := LFindNode;
 end;
 
-function TJsonReader.GetRoot: TJsonNode;
+function TJsonReader.GetRoot: IJsonNode;
 begin
   Result := FRootNode;
 end;
@@ -128,7 +166,7 @@ begin
 end;
 
 function TJsonReader.ParseFromFile(const AFileName: String;
-  const AUtf8: Boolean): TJsonReader;
+  const AUtf8: Boolean): IJsonReader;
 var
   LStream: TFileStream;
   LStreamReader: TStreamReader;
@@ -150,7 +188,7 @@ begin
     // Parse Json
     LData.Init(LJsonString);
     if Assigned(FRootNode) then
-      FRootNode.Free;
+      FRootNode := nil;
 
     case LData.Kind of
       TJsonTypeKind.jtkObject:
@@ -208,9 +246,9 @@ begin
 end;
 
 procedure TJsonReader._ParseJson(const AKey: string; const AData: TJsonData;
-  const AParentNode: TJsonNode);
+  const AParentNode: IJsonNode);
 var
-  LChildNode: TJsonNode;
+  LChildNode: IJsonNode;
   LFor: Int16;
   LKey: String;
 begin
@@ -250,11 +288,12 @@ begin
   FName := AName;
   FField := AField;
   FValue := AValue;
-  FChildren := TObjectList<TJsonNode>.Create;
+  FChildren := TList<IJsonNode>.Create;
 end;
 
 destructor TJsonNode.Destroy;
 begin
+  FChildren.Clear;
   FChildren.Free;
   inherited;
 end;
@@ -304,7 +343,8 @@ end;
 
 function TJsonNode.ToString: String;
 var
-  LChild: TJsonNode;
+  LChild: IJsonNode;
+  LFor: Int32;
 begin
   case FValueType of
     TJsonValueKind.jvkArray:
@@ -337,6 +377,31 @@ begin
   Result := '"' + FField + '"';
 end;
 
+function TJsonNode._GetChildren: TList<IJsonNode>;
+begin
+  Result := FChildren;
+end;
+
+function TJsonNode._GetField: String;
+begin
+  Result := FField;
+end;
+
+function TJsonNode._GetName: String;
+begin
+  Result := FName;
+end;
+
+function TJsonNode._GetValue: Variant;
+begin
+  Result := FValue;
+end;
+
+function TJsonNode._GetValueType: TJsonValueKind;
+begin
+  Result := FValueType;
+end;
+
 function TJsonNode._ValueAsJson: String;
 begin
   case FValueType of
@@ -359,7 +424,7 @@ end;
 
 function TJsonNode.ToJson: String;
 var
-  LChild: TJsonNode;
+  LChild: IJsonNode;
   LBuilder: TStringBuilder;
   LCommaNeeded: Boolean;
 begin
@@ -388,9 +453,9 @@ begin
   end;
 end;
 
-function TListHelper.FindNode(const APredicate: TFunc<TJsonNode, Boolean>): TJsonNode;
+function TListHelper.FindNode(const APredicate: TFunc<IJsonNode, Boolean>): IJsonNode;
 var
-  LNode: TJsonNode;
+  LNode: IJsonNode;
 begin
   Result := nil;
   for LNode in Self do

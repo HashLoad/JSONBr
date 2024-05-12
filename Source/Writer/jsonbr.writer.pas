@@ -37,22 +37,45 @@ uses
   jsonbr.builders;
 
 type
-  TJsonWriter = class
+  IJsonWriter = interface
+    ['{F46189B4-3D01-4C59-837D-5DC747C633FA}']
+    function BeginObject(const AValue: String = ''): IJsonWriter;
+    function BeginArray: IJsonWriter;
+    function EndObject: IJsonWriter;
+    function EndArray: IJsonWriter;
+    function AddPair(const APair: String; const AValue: String): IJsonWriter; overload;
+    function AddPair(const APair: String; const AValue: Char): IJsonWriter; overload;
+    function AddPair(const APair: String; const AValue: Integer): IJsonWriter; overload;
+    function AddPair(const APair: String; const AValue: Double): IJsonWriter; overload;
+    function AddPair(const APair: String; const AValue: Boolean): IJsonWriter; overload;
+    function AddPair(const APair: String; const AValue: IJsonWriter): IJsonWriter; overload;
+    function AddPairNull(const APair: String; const AValue: Variant): IJsonWriter; overload;
+    function AddPairArray(const APair: String; const AValue: array of TValue): IJsonWriter;
+    function AddPairDate(const APair: String; const AValue: TDateTime): IJsonWriter; overload;
+    function ToJson: String;
+  end;
+
+  TJsonWriter = class(TInterfacedObject, IJsonWriter)
   private
     FJsonBuilder: TJsonBuilder;
     FJson: TStringBuilder;
-    procedure _BeginJson;
     procedure _EndJson;
   public
     constructor Create(const AJsonBuilder: TJsonBuilder);
-    function BeginObject(const AValue: String = ''): TJsonWriter; inline;
-    function BeginArray: TJsonWriter; inline;
-    function EndObject: TJsonWriter; inline;
-    function EndArray: TJsonWriter; inline;
-    function AddPair(const APair: String; const AValue: String): TJsonWriter; overload; inline;
-    function AddPair(const APair: String; const AValue: Integer): TJsonWriter; overload; inline;
-    function AddPair(const APair: String; const AValue: TJsonWriter): TJsonWriter; overload; inline;
-    function AddPairArray(const APair: String; const AValue: array of TValue): TJsonWriter;
+    destructor Destroy; override;
+    function BeginObject(const AValue: String = ''): IJsonWriter; inline;
+    function BeginArray: IJsonWriter; inline;
+    function EndObject: IJsonWriter; inline;
+    function EndArray: IJsonWriter; inline;
+    function AddPair(const APair: String; const AValue: String): IJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: Char): IJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: Integer): IJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: Double): IJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: Boolean): IJsonWriter; overload; inline;
+    function AddPair(const APair: String; const AValue: IJsonWriter): IJsonWriter; overload; inline;
+    function AddPairNull(const APair: String; const AValue: Variant): IJsonWriter; overload; inline;
+    function AddPairArray(const APair: String; const AValue: array of TValue): IJsonWriter;
+    function AddPairDate(const APair: String; const AValue: TDateTime): IJsonWriter; overload; inline;
     function ToJson: String; inline;
   end;
 
@@ -63,11 +86,17 @@ implementation
 constructor TJsonWriter.Create(const AJsonBuilder: TJsonBuilder);
 begin
   FJsonBuilder := AJsonBuilder;
+  FJson := TStringBuilder.Create;
 end;
 
-function TJsonWriter.BeginObject(const AValue: String): TJsonWriter;
+destructor TJsonWriter.Destroy;
 begin
-  _BeginJson;
+  FJson.Free;
+  inherited;
+end;
+
+function TJsonWriter.BeginObject(const AValue: String): IJsonWriter;
+begin
   if Length(AValue) > 0 then
     FJson.Append(FJsonBuilder.StringToJSON(AValue) + ':{')
   else
@@ -75,16 +104,14 @@ begin
   Result := Self;
 end;
 
-function TJsonWriter.BeginArray: TJsonWriter;
+function TJsonWriter.BeginArray: IJsonWriter;
 begin
-  _BeginJson;
   FJson.Append('[');
   Result := Self;
 end;
 
-function TJsonWriter.EndObject: TJsonWriter;
+function TJsonWriter.EndObject: IJsonWriter;
 begin
-  _BeginJson;
   if FJson.Length > 1 then
     FJson.Chars[FJson.Length - 1] := '}'
   else
@@ -93,9 +120,8 @@ begin
   Result := Self;
 end;
 
-function TJsonWriter.EndArray: TJsonWriter;
+function TJsonWriter.EndArray: IJsonWriter;
 begin
-  _BeginJson;
   if FJson.Chars[FJson.Length - 1] = ',' then
     FJson.Length := FJson.Length - 1;
   FJson.Append(']');
@@ -103,37 +129,33 @@ begin
 end;
 
 function TJsonWriter.AddPair(const APair: String;
-  const AValue: String): TJsonWriter;
+  const AValue: String): IJsonWriter;
 begin
-  _BeginJson;
   FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
                FJsonBuilder.ValueToJSON(AValue) + ',');
   Result := Self;
 end;
 
 function TJsonWriter.AddPair(const APair: String;
-  const AValue: Integer): TJsonWriter;
+  const AValue: Integer): IJsonWriter;
 begin
-  _BeginJson;
   FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
                FJsonBuilder.ValueToJSON(AValue) + ',');
   Result := Self;
 end;
 
 function TJsonWriter.AddPair(const APair: String;
-  const AValue: TJsonWriter): TJsonWriter;
+  const AValue: IJsonWriter): IJsonWriter;
 begin
-  _BeginJson;
   FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' + AValue.ToJson);
   Result := Self;
 end;
 
 function TJsonWriter.AddPairArray(const APair: String;
-  const AValue: array of TValue): TJsonWriter;
+  const AValue: array of TValue): IJsonWriter;
 var
   LFor: Integer;
 begin
-  _BeginJson;
   FJson.Append(FJsonBuilder.StringToJSON(APair) + ':[ ');
   for LFor := Low(AValue) to High(AValue) do
     FJson.Append(FJsonBuilder.ValueToJSON(AValue[LFor].ToString) + ',');
@@ -143,25 +165,65 @@ begin
   Result := Self;
 end;
 
+function TJsonWriter.AddPairDate(const APair: String;
+  const AValue: TDateTime): IJsonWriter;
+begin
+  if not VarIsType(AValue, varDate) then
+    raise Exception.Create('The value provided for the pair "' + APair + '" is not a valid TDateTime.');
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
+               FJsonBuilder.ValueToJSON(AValue) + ',');
+  Result := Self;
+end;
+
+function TJsonWriter.AddPairNull(const APair: String;
+  const AValue: Variant): IJsonWriter;
+begin
+  if AValue <> Null then
+    raise Exception.Create('The value provided for the pair "' + APair + '" is not Null.');
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
+               FJsonBuilder.ValueToJSON(AValue) + ',');
+  Result := Self;
+end;
+
 function TJsonWriter.ToJson: String;
 begin
-  _BeginJson;
+  Result := EmptyStr;
+  if not Assigned(FJson) then
+    Exit;
   if FJson.Chars[FJson.Length - 1] = ',' then
     FJson.Chars[FJson.Length - 1] := ' ';
   Result := TrimRight(FJson.ToString);
   _EndJson;
 end;
 
-procedure TJsonWriter._BeginJson;
-begin
-  if not Assigned(FJson) then
-    FJson := TStringBuilder.Create;
-end;
-
 procedure TJsonWriter._EndJson;
 begin
   if Assigned(FJson) then
-    FJson.Free;
+    FJson.Clear;
+end;
+
+function TJsonWriter.AddPair(const APair: String;
+  const AValue: Boolean): IJsonWriter;
+begin
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
+               FJsonBuilder.ValueToJSON(AValue) + ',');
+  Result := Self;
+end;
+
+function TJsonWriter.AddPair(const APair: String;
+  const AValue: Double): IJsonWriter;
+begin
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
+               FJsonBuilder.ValueToJSON(AValue) + ',');
+  Result := Self;
+end;
+
+function TJsonWriter.AddPair(const APair: String;
+  const AValue: Char): IJsonWriter;
+begin
+  FJson.Append(FJsonBuilder.StringToJSON(APair) + ':' +
+               FJsonBuilder.ValueToJSON(AValue) + ',');
+  Result := Self;
 end;
 
 end.

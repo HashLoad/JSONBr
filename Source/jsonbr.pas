@@ -42,8 +42,8 @@ type
   TJsonBr = class
   strict private
     class var FJsonBuilder: TJsonBuilder;
-    class var FJsonWriter: TJsonWriter;
-    class var FJsonReader: TJsonReader;
+    class var FJsonWriter: IJsonWriter;
+    class var FJsonReader: IJsonReader;
     class procedure _SetNotifyEventGetValue(const Value: TNotifyEventGetValue); static; inline;
     class procedure _SetNotifyEventSetValue(const Value: TNotifyEventSetValue); static; inline;
     class procedure _SetFormatSettings(const Value: TFormatSettings); static; inline;
@@ -64,13 +64,13 @@ type
     class function JsonToObjectList(const AJson: String; const AType: TClass): TObjectList<TObject>; overload; inline;
     class procedure JsonToObject(const AJson: String; AObject: TObject); overload; inline;
     // Write
-    class function BeginObject(const AValue: String = ''): TJsonWriter; inline;
-    class function BeginArray: TJsonWriter; inline;
+    class function BeginObject(const AValue: String = ''): IJsonWriter; inline;
+    class function BeginArray: IJsonWriter; inline;
     // Reader
     class procedure ParseFromFile(const AFileName: String; const AUtf8: Boolean = True); inline;
     class procedure SaveJsonToFile(const AFileName: String; const AUtf8: Boolean = True); inline;
-    class function Write: TJsonWriter; inline;
-    class function Reader: TJsonReader; inline;
+    class function Write: IJsonWriter; inline;
+    class function Reader: IJsonReader; inline;
     // Middlewares GetValue/SetValue
     class procedure AddMiddleware(const AEventMiddleware: IEventMiddleware);
     {$MESSAGE WARN 'This property [OnSetValue] has been deprecated, Use middlewares instead.'}
@@ -89,12 +89,12 @@ begin
   FJsonBuilder.AddMiddleware(AEventMiddleware);
 end;
 
-class function TJsonBr.BeginArray: TJsonWriter;
+class function TJsonBr.BeginArray: IJsonWriter;
 begin
   Result := FJsonWriter.BeginArray;
 end;
 
-class function TJsonBr.BeginObject(const AValue: String = ''): TJsonWriter;
+class function TJsonBr.BeginObject(const AValue: String = ''): IJsonWriter;
 begin
   Result := FJsonWriter.BeginObject(AValue);
 end;
@@ -109,8 +109,6 @@ end;
 class destructor TJsonBr.Destroy;
 begin
   FJsonBuilder.Free;
-  FJsonWriter.Free;
-  FJsonReader.Free;
   inherited;
 end;
 
@@ -207,7 +205,7 @@ begin
   FJsonReader.ParseFromFile(AFileName, AUtf8);
 end;
 
-class function TJsonBr.Reader: TJsonReader;
+class function TJsonBr.Reader: IJsonReader;
 begin
   Result := FJsonReader;
 end;
@@ -217,7 +215,7 @@ begin
   FJsonBuilder.OnSetValue := Value;
 end;
 
-class function TJsonBr.Write: TJsonWriter;
+class function TJsonBr.Write: IJsonWriter;
 begin
   Result := FJsonWriter;
 end;

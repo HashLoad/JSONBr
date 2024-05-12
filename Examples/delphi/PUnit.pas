@@ -45,7 +45,7 @@ begin
   // Criar JSON de forma funcinal
   Memo1.Clear;
   Memo1.Lines.Add(
-                  TJSONBr
+                  TJsonBr
                    .BeginArray
                      .BeginObject
                        .AddPair('ID', 1)
@@ -59,6 +59,10 @@ begin
                        .BeginObject
                          .AddPair('ID', 3)
                          .AddPair('Name', 'Json 3')
+                         .AddPair('Salary', 111.50)
+                         .AddPairDate('Date', Now)
+                         .AddPair('Active', True)
+                         .AddPairNull('Nulo', Null)
                        .EndObject
                      .EndArray
                    .EndArray
@@ -104,9 +108,9 @@ begin
     Person.Pessoas.Add(Person1);
     Person.Pessoas.Add(Person2);
 
-    TJSONBr.OnSetValue := nil; // Criando seu proprio tratamento
-    TJSONBr.OnGetValue := nil; // Criando seu proprio tratamento
-    Memo1.Lines.Text := TJSONBr.ObjectToJsonString(Person);
+    TJsonBr.OnSetValue := nil; // Criando seu proprio tratamento
+    TJsonBr.OnGetValue := nil; // Criando seu proprio tratamento
+    Memo1.Lines.Text := TJsonBr.ObjectToJsonString(Person);
 
   finally
     Person.Free;

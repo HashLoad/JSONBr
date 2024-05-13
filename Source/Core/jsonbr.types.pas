@@ -8,6 +8,7 @@ uses
 
 type
   EJsonBrException = class(Exception);
+
   TDynamicArrayKey = array of String;
   TDynamicArrayValue = array of Variant;
 
@@ -30,8 +31,8 @@ type
   {$SCOPEDENUMS OFF}
 
   PropWrap = packed record
-    FillBytes: array [0..SizeOf(pointer)-2] of byte;
-    Kind: byte;
+    FillBytes: array [0..SizeOf(pointer)-2] of Byte;
+    Kind: Byte;
   end;
 
   TNotifyEventGetValue = procedure(const AInstance: TObject;

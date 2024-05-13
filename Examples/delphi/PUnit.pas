@@ -47,22 +47,22 @@ begin
   Memo1.Lines.Add(
                   TJsonBr
                    .BeginArray
-                     .BeginObject
-                       .AddPair('ID', 1)
-                       .AddPair('Name', 'Json')
+                     .BeginObject('object0')
+                       .Add('ID', 1)
+                       .Add('Name', 'Json')
                      .EndObject
                      .BeginArray
-                       .BeginObject
-                         .AddPair('ID', 2)
-                         .AddPair('Name', 'Json 2')
+                       .BeginObject('object1')
+                         .Add('ID', 2)
+                         .Add('Name', 'Json 2')
                        .EndObject
-                       .BeginObject
-                         .AddPair('ID', 3)
-                         .AddPair('Name', 'Json 3')
-                         .AddPair('Salary', 111.50)
-                         .AddPairDate('Date', Now)
-                         .AddPair('Active', True)
-                         .AddPairNull('Nulo', Null)
+                       .BeginObject('object2')
+                         .Add('ID', 3)
+                         .Add('Name', 'Json 3')
+                         .Add('Salary', 111.50)
+                         .AddDate('Date', Now)
+                         .Add('Active', True)
+                         .AddNull('Nulo', Null)
                        .EndObject
                      .EndArray
                    .EndArray

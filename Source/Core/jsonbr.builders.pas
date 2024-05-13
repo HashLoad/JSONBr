@@ -43,13 +43,18 @@ uses
 type
   TJsonBuilder = class;
 
+  PJsonPair = ^TJsonPair;
+  TJsonPair = record
+    ValueType: TVarType;
+    Kind: TJsonTypeKind;
+    Count: Integer;
+    Names: TDynamicArrayKey;
+    Values: TDynamicArrayValue;
+  end;
+
   TJsonData = record
   private
-    FVType: TVarType;
-    FVKind: TJsonTypeKind;
-    FVCount: Integer;
-    FNames: TDynamicArrayKey;
-    FValues: TDynamicArrayValue;
+    FJsonPair: TJsonPair;
     procedure _SetKind(const Value: TJsonTypeKind);
     procedure _SetValue(const AName: String; const AValue: Variant);
     procedure _SetItem(AIndex: Integer; const AItem: Variant);
@@ -169,9 +174,9 @@ function TJsonBuilder.JsonVariant(const AValues: TDynamicArrayValue): Variant;
 begin
   VarClear(Result);
   TJsonData(Result).Init;
-  TJsonData(Result).FVKind := TJsonTypeKind.jtkArray;
-  TJsonData(Result).FVCount := Length(AValues);
-  TJsonData(Result).FValues := AValues;
+  TJsonData(Result).FJsonPair.Kind := TJsonTypeKind.jtkArray;
+  TJsonData(Result).FJsonPair.Count := Length(AValues);
+  TJsonData(Result).FJsonPair.Values := AValues;
 end;
 
 class function TJsonBuilder._JsonVariantData(const AValue: Variant): TJsonData;
@@ -493,7 +498,6 @@ begin
       tkArray, tkDynArray:
         begin
           if _IsBlob(LTypeInfo) then
-
           else
             AProperty.SetValue(AInstance, _GetValueArray(LTypeInfo, LValue));
         end;
@@ -602,7 +606,7 @@ var
 begin
   LData.Init(AJson);
   Result := nil;
-  if (LData.FVKind <> TJsonTypeKind.jtkArray) then
+  if (LData.FJsonPair.Kind <> TJsonTypeKind.jtkArray) then
     Exit;
 
   Result := TObjectList<TObject>.Create;
@@ -610,7 +614,7 @@ begin
   for LFor := 0 to LData.Count - 1 do
   begin
     LItem := AType.Create;
-    if not _JsonVariantData(LData.FValues[LFor]).ToObject(LItem) then
+    if not _JsonVariantData(LData.FJsonPair.Values[LFor]).ToObject(LItem) then
     begin
       Result.Free;
       Exit;
@@ -627,7 +631,7 @@ var
 begin
   LData.Init(AJson);
   Result := nil;
-  if (LData.FVKind <> TJsonTypeKind.jtkArray) then
+  if (LData.FJsonPair.Kind <> TJsonTypeKind.jtkArray) then
     Exit;
 
   Result := TObjectList<T>.Create;
@@ -635,7 +639,7 @@ begin
   for LFor := 0 to LData.Count - 1 do
   begin
     LItem := T.Create;
-    if not _JsonVariantData(LData.FValues[LFor]).ToObject(LItem) then
+    if not _JsonVariantData(LData.FJsonPair.Values[LFor]).ToObject(LItem) then
     begin
       Result.Free;
       Exit;
@@ -1173,9 +1177,9 @@ begin
         Exit;
       end;
     until False;
-    SetLength(AData.FValues, AData.FVCount);
+    SetLength(AData.FJsonPair.Values, AData.FJsonPair.Count);
   end;
-  AData.FVKind := TJsonTypeKind.jtkArray;
+  AData.FJsonPair.Kind := TJsonTypeKind.jtkArray;
   Result := True;
 end;
 
@@ -1207,10 +1211,10 @@ begin
         Exit;
       end;
     until False;
-    SetLength(AData.FNames, AData.FVCount);
+    SetLength(AData.FJsonPair.Names, AData.FJsonPair.Count);
   end;
-  SetLength(AData.FValues, AData.FVCount);
-  AData.FVKind := TJsonTypeKind.jtkObject;
+  SetLength(AData.FJsonPair.Values, AData.FJsonPair.Count);
+  AData.FJsonPair.Kind := TJsonTypeKind.jtkObject;
   Result := True;
 end;
 
@@ -1218,74 +1222,74 @@ end;
 
 procedure TJsonData.Init;
 begin
-  FVType := GJsonVariantType.VarType;
-  FVKind := TJsonTypeKind.jtkUndefined;
-  FVCount := 0;
-  Finalize(FNames);
-  Finalize(FValues);
-  Pointer(FNames) := nil;
-  Pointer(FValues) := nil;
+  FJsonPair.ValueType := GJsonVariantType.VarType;
+  FJsonPair.Kind := TJsonTypeKind.jtkUndefined;
+  FJsonPair.Count := 0;
+  Finalize(FJsonPair.Names);
+  Finalize(FJsonPair.Values);
+  Pointer(FJsonPair.Names) := nil;
+  Pointer(FJsonPair.Values) := nil;
 end;
 
 procedure TJsonData.Init(const AJson: String);
 begin
   Init;
   FromJson(AJson);
-  if FVType = varNull then
-    FVKind := TJsonTypeKind.jtkObject
+  if FJsonPair.ValueType = varNull then
+    FJsonPair.Kind := TJsonTypeKind.jtkObject
   else
-  if FVType <> GJsonVariantType.VarType then
+  if FJsonPair.ValueType <> GJsonVariantType.VarType then
     Init;
 end;
 
 procedure TJsonData.InitFrom(const AValues: TDynamicArrayValue);
 begin
   Init;
-  FVKind := TJsonTypeKind.jtkArray;
-  FValues := AValues;
-  FVCount := Length(AValues);
+  FJsonPair.Kind := TJsonTypeKind.jtkArray;
+  FJsonPair.Values := AValues;
+  FJsonPair.Count := Length(AValues);
 end;
 
 procedure TJsonData.Clear;
 begin
-  FNames := nil;
-  FValues := nil;
+  FJsonPair.Names := nil;
+  FJsonPair.Values := nil;
   Init;
 end;
 
 procedure TJsonData.AddNameValue(const AName: String;
   const AValue: Variant);
 begin
-  if FVKind = TJsonTypeKind.jtkUndefined then
-    FVKind := TJsonTypeKind.jtkObject
+  if FJsonPair.Kind = TJsonTypeKind.jtkUndefined then
+    FJsonPair.Kind := TJsonTypeKind.jtkObject
   else
-  if FVKind <> TJsonTypeKind.jtkObject then
+  if FJsonPair.Kind <> TJsonTypeKind.jtkObject then
     raise EJsonBrException.CreateFmt('AddNameValue(%s) over array', [AName]);
-  if FVCount <= Length(FValues) then
+  if FJsonPair.Count <= Length(FJsonPair.Values) then
   begin
-    SetLength(FValues, FVCount + FVCount shr 3 + 32);
-    SetLength(FNames, FVCount + FVCount shr 3 + 32);
+    SetLength(FJsonPair.Values, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
+    SetLength(FJsonPair.Names, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
   end;
-  FValues[FVCount] := AValue;
-  FNames[FVCount] := AName;
-  Inc(FVCount);
+  FJsonPair.Values[FJsonPair.Count] := AValue;
+  FJsonPair.Names[FJsonPair.Count] := AName;
+  Inc(FJsonPair.Count);
 end;
 
 procedure TJsonData.AddValue(const AValue: Variant);
 begin
-  if FVKind = TJsonTypeKind.jtkUndefined then
-    FVKind := TJsonTypeKind.jtkArray
+  if FJsonPair.Kind = TJsonTypeKind.jtkUndefined then
+    FJsonPair.Kind := TJsonTypeKind.jtkArray
   else
-  if FVKind <> TJsonTypeKind.jtkArray then
+  if FJsonPair.Kind <> TJsonTypeKind.jtkArray then
     raise EJsonBrException.Create('AddValue() over object');
-  if FVCount <= Length(FValues) then
+  if FJsonPair.Count <= Length(FJsonPair.Values) then
   begin
-    SetLength(FNames, FVCount + FVCount shr 3 + 32);
-    SetLength(FValues, FVCount + FVCount shr 3 + 32);
+    SetLength(FJsonPair.Names, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
+    SetLength(FJsonPair.Values, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
   end;
-  FNames[FVCount] := IntToStr(FVCount);
-  FValues[FVCount] := AValue;
-  Inc(FVCount);
+  FJsonPair.Names[FJsonPair.Count] := IntToStr(FJsonPair.Count);
+  FJsonPair.Values[FJsonPair.Count] := AValue;
+  Inc(FJsonPair.Count);
 end;
 
 function TJsonData.FromJson(const AJson: String): Boolean;
@@ -1298,21 +1302,21 @@ end;
 
 function TJsonData._GetKind: TJsonTypeKind;
 begin
-  Result := FVKind;
-  if (@Self = nil) or (FVType <> GJsonVariantType.VarType) then
+  Result := FJsonPair.Kind;
+  if (@Self = nil) or (FJsonPair.ValueType <> GJsonVariantType.VarType) then
     Result := TJsonTypeKind.jtkUndefined
 end;
 
 function TJsonData._GetCount: Integer;
 begin
-  Result := FVCount;
-  if (@Self = nil) or (FVType <> GJsonVariantType.VarType) then
+  Result := FJsonPair.Count;
+  if (@Self = nil) or (FJsonPair.ValueType <> GJsonVariantType.VarType) then
     Result := 0
 end;
 
 function TJsonData._GetDataType: TJsonValueKind;
 begin
-  case VarType(FVType) of
+  case VarType(FJsonPair.ValueType) of
     varEmpty, varNull: Result := TJsonValueKind.jvkNull;
     varBoolean: Result := TJsonValueKind.jvkBoolean;
     varString, varUString, varOleStr: Result := TJsonValueKind.jvkString;
@@ -1331,7 +1335,7 @@ end;
 function TJsonData._GetValue(const AName: String): Variant;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkObject) then
+  if (@Self <> nil) and (FJsonPair.ValueType = GJsonVariantType.VarType) and (FJsonPair.Kind = TJsonTypeKind.jtkObject) then
     _GetVarData(AName, TVarData(Result));
 end;
 
@@ -1340,32 +1344,32 @@ var
   LFor: Cardinal;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkObject) then
+  if (@Self <> nil) and (FJsonPair.ValueType = GJsonVariantType.VarType) and (FJsonPair.Kind = TJsonTypeKind.jtkObject) then
   begin
     LFor := Cardinal(NameIndex(AName));
-    if LFor < Cardinal(Length(FValues)) then
-      Result := FValues[LFor];
+    if LFor < Cardinal(Length(FJsonPair.Values)) then
+      Result := FJsonPair.Values[LFor];
   end;
 end;
 
 function TJsonData._GetItem(AIndex: Integer): Variant;
 begin
   VarClear(Result);
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkArray) then
-    if Cardinal(AIndex) < Cardinal(FVCount) then
-      Result := FValues[AIndex];
+  if (@Self <> nil) and (FJsonPair.ValueType = GJsonVariantType.VarType) and (FJsonPair.Kind = TJsonTypeKind.jtkArray) then
+    if Cardinal(AIndex) < Cardinal(FJsonPair.Count) then
+      Result := FJsonPair.Values[AIndex];
 end;
 
 procedure TJsonData._SetItem(AIndex: Integer; const AItem: Variant);
 begin
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FVKind = TJsonTypeKind.jtkArray) then
-    if Cardinal(AIndex) < Cardinal(FVCount) then
-      FValues[AIndex] := AItem;
+  if (@Self <> nil) and (FJsonPair.ValueType = GJsonVariantType.VarType) and (FJsonPair.Kind = TJsonTypeKind.jtkArray) then
+    if Cardinal(AIndex) < Cardinal(FJsonPair.Count) then
+      FJsonPair.Values[AIndex] := AItem;
 end;
 
 procedure TJsonData._SetKind(const Value: TJsonTypeKind);
 begin
-  FVKind := Value;
+  FJsonPair.Kind := Value;
 end;
 
 function TJsonData._GetVarData(const AName: String; var ADest: TVarData): Boolean;
@@ -1374,25 +1378,25 @@ var
 begin
   Result := False;
   LFor := Cardinal(NameIndex(AName));
-  if LFor > Cardinal(Length(FValues)) then
+  if LFor > Cardinal(Length(FJsonPair.Values)) then
     Exit;
   ADest.VType := varVariant or varByRef;
-  ADest.VPointer := @FValues[LFor];
+  ADest.VPointer := @FJsonPair.Values[LFor];
   Result := True;
 end;
 
 function TJsonData.NameIndex(const AName: String): Integer;
 begin
-  if (@Self <> nil) and (FVType = GJsonVariantType.VarType) and (FNames <> nil) then
-    for Result := 0 to FVCount - 1 do
-      if FNames[Result] = AName then
+  if (@Self <> nil) and (FJsonPair.ValueType = GJsonVariantType.VarType) and (FJsonPair.Names <> nil) then
+    for Result := 0 to FJsonPair.Count - 1 do
+      if FJsonPair.Names[Result] = AName then
         Exit;
   Result := -1;
 end;
 
 function TJsonData.Names: TDynamicArrayKey;
 begin
-  Result := FNames;
+  Result := FJsonPair.Names;
 end;
 
 procedure TJsonData._SetValue(const AName: String; const AValue: Variant);
@@ -1407,7 +1411,7 @@ begin
   if LFor < 0 then
     AddNameValue(AName, AValue)
   else
-    FValues[LFor] := String(AValue);
+    FJsonPair.Values[LFor] := String(AValue);
 end;
 
 function TJsonData.ToJson: String;
@@ -1417,34 +1421,34 @@ var
 begin
   LBuilder := TStringBuilder.Create;
   try
-    case FVKind of
+    case FJsonPair.Kind of
       TJsonTypeKind.jtkObject:
-        if FVCount = 0 then
+        if FJsonPair.Count = 0 then
           Result := '{}'
         else
         begin
           LBuilder.Append('{');
-          for LFor := 0 to FVCount - 1 do
+          for LFor := 0 to FJsonPair.Count - 1 do
           begin
-            LBuilder.Append(TJsonBuilder.StringToJson(FNames[LFor]))
+            LBuilder.Append(TJsonBuilder.StringToJson(FJsonPair.Names[LFor]))
                           .Append(':')
-                          .Append(TJsonBuilder.ValueToJson(FValues[LFor]));
-            if LFor < FVCount - 1 then
+                          .Append(TJsonBuilder.ValueToJson(FJsonPair.Values[LFor]));
+            if LFor < FJsonPair.Count - 1 then
               LBuilder.Append(', ');
           end;
           LBuilder.Append('}');
           Result := LBuilder.ToString;
         end;
       TJsonTypeKind.jtkArray:
-        if FVCount = 0 then
+        if FJsonPair.Count = 0 then
           Result := '[]'
         else
         begin
           LBuilder.Append('[');
-          for LFor := 0 to FVCount - 1 do
+          for LFor := 0 to FJsonPair.Count - 1 do
           begin
-            LBuilder.Append(TJsonBuilder.ValueToJson(FValues[LFor]));
-            if LFor < FVCount - 1 then
+            LBuilder.Append(TJsonBuilder.ValueToJson(FJsonPair.Values[LFor]));
+            if LFor < FJsonPair.Count - 1 then
               LBuilder.Append(', ');
           end;
           LBuilder.Append(']');
@@ -1485,17 +1489,17 @@ begin
   Result := False;
   if AObject = nil then
     Exit;
-  case FVKind of
+  case FJsonPair.Kind of
     TJsonTypeKind.jtkObject:
       begin
         LListType := FContext.GetType(AObject.ClassType);
         if LListType <> nil then
         begin
-          for LFor := 0 to FVCount - 1 do
+          for LFor := 0 to FJsonPair.Count - 1 do
           begin
-            LProperty := LListType.GetProperty(FNames[LFor]);
+            LProperty := LListType.GetProperty(FJsonPair.Names[LFor]);
             if LProperty <> nil then
-              TJsonBuilder._SetInstanceProp(AObject, LProperty, FValues[LFor]);
+              TJsonBuilder._SetInstanceProp(AObject, LProperty, FJsonPair.Values[LFor]);
           end;
         end;
       end;
@@ -1504,10 +1508,10 @@ begin
         if AObject.InheritsFrom(TCollection) then
         begin
           TCollection(AObject).Clear;
-          for LFor := 0 to FVCount - 1 do
+          for LFor := 0 to FJsonPair.Count - 1 do
           begin
             LItem := TCollection(AObject).Add;
-            if not TJsonBuilder._JsonVariantData(FValues[LFor]).ToObject(LItem) then
+            if not TJsonBuilder._JsonVariantData(FJsonPair.Values[LFor]).ToObject(LItem) then
               Exit;
           end;
         end
@@ -1517,8 +1521,8 @@ begin
           try
             TStrings(AObject).BeginUpdate;
             TStrings(AObject).Clear;
-            for LFor := 0 to FVCount - 1 do
-              TStrings(AObject).Add(FValues[LFor]);
+            for LFor := 0 to FJsonPair.Count - 1 do
+              TStrings(AObject).Add(FJsonPair.Values[LFor]);
           finally
             TStrings(AObject).EndUpdate;
           end
@@ -1530,11 +1534,11 @@ begin
           LListType := _GetListType(LListType);
           if LListType.IsInstance then
           begin
-            for LFor := 0 to FVCount - 1 do
+            for LFor := 0 to FJsonPair.Count - 1 do
             begin
               LObjectType := LListType.AsInstance.MetaclassType.Create;
               L_MethodCall(LObjectType, 'Create', []);
-              if not TJsonBuilder._JsonVariantData(FValues[LFor]).ToObject(LObjectType) then
+              if not TJsonBuilder._JsonVariantData(FJsonPair.Values[LFor]).ToObject(LObjectType) then
                 Exit;
               L_MethodCall(AObject, 'Add', [LObjectType]);
             end;
@@ -1551,7 +1555,7 @@ end;
 
 function TJsonData.Values: TDynamicArrayValue;
 begin
-  Result := FValues;
+  Result := FJsonPair.Values;
 end;
 
 function TJsonData._GetListType(LRttiType: TRttiType): TRttiType;
@@ -1596,8 +1600,8 @@ end;
 procedure TJsonVariant.Clear(var AVarData: TVarData);
 begin
   AVarData.VType := varEmpty;
-  Finalize(TJsonData(AVarData).FNames);
-  Finalize(TJsonData(AVarData).FValues);
+  Finalize(TJsonData(AVarData).FJsonPair.Names);
+  Finalize(TJsonData(AVarData).FJsonPair.Values);
 end;
 
 procedure TJsonVariant.Copy(var ADest: TVarData; const ASource: TVarData;

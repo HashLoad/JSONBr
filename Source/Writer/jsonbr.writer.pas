@@ -103,7 +103,7 @@ function TJsonWriter.BeginObject(const AValue: String): IJsonWriter;
 begin
   if FSession in [TJsonBrSession.sArray] then
     FJson.Append('{');
-  if Length(AValue) > 0 then
+  if AValue <> EmptyStr then
     FJson.Append(FJsonBuilder.StringToJSON(AValue) + ':{')
   else
     FJson.Append('{');
@@ -113,7 +113,7 @@ end;
 function TJsonWriter.BeginArray(const AValue: String = ''): IJsonWriter;
 begin
   FSession := TJsonBrSession.sArray;
-  if Length(AValue) > 0 then
+  if AValue <> EmptyStr then
     FJson.Append(FJsonBuilder.StringToJSON(AValue) + ':[')
   else
     FJson.Append('[');
@@ -199,7 +199,6 @@ end;
 
 function TJsonWriter.ToJson: String;
 begin
-  FSession := TJsonBrSession.sNone;
   Result := EmptyStr;
   if not Assigned(FJson) then
     Exit;
@@ -213,6 +212,7 @@ procedure TJsonWriter._EndJson;
 begin
   if Assigned(FJson) then
     FJson.Clear;
+  FSession := TJsonBrSession.sNone;
 end;
 
 function TJsonWriter.Add(const APair: String;

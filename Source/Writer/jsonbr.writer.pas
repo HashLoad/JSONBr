@@ -42,7 +42,7 @@ type
   IJsonWriter = interface
     ['{F46189B4-3D01-4C59-837D-5DC747C633FA}']
     function BeginObject(const AValue: String = ''): IJsonWriter;
-    function BeginArray: IJsonWriter;
+    function BeginArray(const AValue: String = ''): IJsonWriter;
     function EndObject: IJsonWriter;
     function EndArray: IJsonWriter;
     function Add(const APair: String; const AValue: String): IJsonWriter; overload;
@@ -67,7 +67,7 @@ type
     constructor Create(const AJsonBuilder: TJsonBuilder);
     destructor Destroy; override;
     function BeginObject(const AValue: String = ''): IJsonWriter; inline;
-    function BeginArray: IJsonWriter; inline;
+    function BeginArray(const AValue: String = ''): IJsonWriter; inline;
     function EndObject: IJsonWriter; inline;
     function EndArray: IJsonWriter; inline;
     function Add(const APair: String; const AValue: String): IJsonWriter; overload; inline;
@@ -110,16 +110,19 @@ begin
   Result := Self;
 end;
 
-function TJsonWriter.BeginArray: IJsonWriter;
+function TJsonWriter.BeginArray(const AValue: String = ''): IJsonWriter;
 begin
   FSession := TJsonBrSession.sArray;
-  FJson.Append('[');
+  if Length(AValue) > 0 then
+    FJson.Append(FJsonBuilder.StringToJSON(AValue) + ':[')
+  else
+    FJson.Append('[');
   Result := Self;
 end;
 
 function TJsonWriter.EndObject: IJsonWriter;
 begin
-  if FJson.Length > 1 then
+  if FJson.Chars[FJson.Length - 1] = ',' then
     FJson.Chars[FJson.Length - 1] := '}'
   else
     FJson.Append('}');
@@ -131,7 +134,6 @@ end;
 
 function TJsonWriter.EndArray: IJsonWriter;
 begin
-  FSession := TJsonBrSession.sNone;
   if FJson.Chars[FJson.Length - 1] = ',' then
     FJson.Length := FJson.Length - 1;
   FJson.Append(']');
@@ -197,6 +199,7 @@ end;
 
 function TJsonWriter.ToJson: String;
 begin
+  FSession := TJsonBrSession.sNone;
   Result := EmptyStr;
   if not Assigned(FJson) then
     Exit;

@@ -261,9 +261,9 @@ begin
       varBoolean:
         begin
           if TVarData(AValue).VBoolean then
-            Result := 'True'
+            Result := 'true'
           else
-            Result := 'False';
+            Result := 'false';
         end;
       varDate:
         Result := '"' + DateTimeToIso8601(TVarData(AValue).VDouble, UseISO8601DateFormat) + '"';

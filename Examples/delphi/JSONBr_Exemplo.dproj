@@ -104,11 +104,12 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="..\..\Source\jsonbr.pas"/>
-        <DCCReference Include="..\..\Source\Core\jsonbr.builders.pas"/>
-        <DCCReference Include="..\..\Source\Core\jsonbr.reader.pas"/>
-        <DCCReference Include="..\..\Source\Core\jsonbr.utils.pas"/>
-        <DCCReference Include="..\..\Source\Core\jsonbr.writer.pas"/>
         <DCCReference Include="model.person.pas"/>
+        <DCCReference Include="..\..\Source\Reader\jsonbr.reader.pas"/>
+        <DCCReference Include="..\..\Source\Writer\jsonbr.writer.pas"/>
+        <DCCReference Include="..\..\Source\Core\jsonbr.builders.pas"/>
+        <DCCReference Include="..\..\Source\Core\jsonbr.types.pas"/>
+        <DCCReference Include="..\..\Source\Core\jsonbr.utils.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

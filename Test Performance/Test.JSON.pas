@@ -52,6 +52,28 @@ type
     procedure XSuperObjectObjectListToJson;
     [Test]
     procedure XSuperObjectJsonToObjectList;
+    // superobject
+    [Test]
+    procedure SuperObjectLoop50000;
+    [Test]
+    procedure SuperObjectJsonToObject;
+    [Test]
+    procedure SuperObjectObjectToJson;
+    [Test]
+    procedure SuperObjectObjectListToJson;
+    [Test]
+    procedure SuperObjectJsonToObjectList;
+    // JsonDataObjects
+    [Test]
+    procedure JsonDataObjectLoop50000;
+    [Test]
+    procedure JsonDataObjectJsonToObject;
+    [Test]
+    procedure JsonDataObjectObjectToJson;
+    [Test]
+    procedure JsonDataObjectObjectListToJson;
+    [Test]
+    procedure JsonDataObjectJsonToObjectList;
   end;
 
 implementation
@@ -65,13 +87,75 @@ uses
   DUnitX.utils,
   XSuperJSON,
   XSuperObject,
+  SuperObject,
   test.res_json,
   test.json_br,
-  test.xsuper;
+  test.xsuper,
+  test.superobject,
+  test.jsondataobjects;
 
 procedure TTestJSON.Setup;
 begin
 
+end;
+
+procedure TTestJSON.SuperObjectJsonToObject;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _SuperObjectJsonToObject;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.SuperObjectJsonToObjectList;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _SuperObjectJsonToObjectList;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.SuperObjectLoop50000;
+var
+  Stopwatch: TStopwatch;
+begin
+  SetColorConsole(clBlue);
+  System.Writeln(' ');
+  System.Writeln('.SuperObject (Not use Rtti)');
+
+  Stopwatch := TStopwatch.StartNew;
+  _SuperObjectLoop50000;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.SuperObjectObjectListToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _SuperObjectObjectListToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.SuperObjectObjectToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _SuperObjectObjectToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
 end;
 
 procedure TTestJSON.TearDown;
@@ -107,7 +191,7 @@ var
 begin
   SetColorConsole(clPurple);
   System.Writeln(' ');
-  System.Writeln('.XSuperJSON');
+  System.Writeln('.XSuperJSON (Use Rtti)');
 
   Stopwatch := TStopwatch.StartNew;
   _XSuperObjectLoop50000;
@@ -166,7 +250,7 @@ var
 begin
   SetColorConsole(clGreen);
   System.Writeln(' ');
-  System.Writeln('.JSONBr Framework');
+  System.Writeln('.JSONBr Framework (Use Rtti)');
 
   Stopwatch := TStopwatch.StartNew;
   _JSONBrLoop50000;
@@ -192,6 +276,65 @@ var
 begin
   Stopwatch := TStopwatch.StartNew;
   _JSONBrObjectToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.JsonDataObjectJsonToObject;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _JsonDataObjectJsonToObject;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando 1 objeto do json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.JsonDataObjectJsonToObjectList;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _JsonDataObjectJsonToObjectList;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando uma list com 5000 objetos de um json array(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.JsonDataObjectLoop50000;
+var
+  Stopwatch: TStopwatch;
+begin
+  SetColorConsole(clYellow);
+  System.Writeln(' ');
+  System.Writeln('.JsonDataObjects (Not use Rtti)');
+
+  Stopwatch := TStopwatch.StartNew;
+  _JsonDataObjectLoop50000;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('..Loop gerando 50.000 objetos de um json object(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.JsonDataObjectObjectListToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _JsonDataObjectObjectListToJson;
+  Stopwatch.Stop;
+
+  System.Writeln(Format('Gerando json array de uma lista com 5000 objetos(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
+end;
+
+procedure TTestJSON.JsonDataObjectObjectToJson;
+var
+  Stopwatch: TStopwatch;
+begin
+  Stopwatch := TStopwatch.StartNew;
+  _JsonDataObjectObjectToJson;
   Stopwatch.Stop;
 
   System.Writeln(Format('Gerando 1 json object de um objeto(' + cMESSAGE, [Stopwatch.ElapsedMilliseconds / 100, Stopwatch.ElapsedMilliseconds]) + ')');
@@ -225,7 +368,7 @@ var
 begin
   SetColorConsole(clRed);
   System.Writeln(' ');
-  System.Writeln('.REST.Json Delphi');
+  System.Writeln('.REST.Json Delphi (Use Rtti)');
 
   Stopwatch := TStopwatch.StartNew;
   _RESTJsonLoop50000;

@@ -9,7 +9,12 @@ uses
 type
   EJsonBrException = class(Exception);
 
+//  PDynamicArrayKey = ^TDynamicArrayKey;
+//  TDynamicArrayKey = array[0..MaxInt div SizeOf(String) - 1] of String;
   TDynamicArrayKey = array of String;
+
+//  PDynamicArrayValue = ^TDynamicArrayValue;
+//  TDynamicArrayValue = array[0..MaxInt div SizeOf(Variant) - 1] of Variant;
   TDynamicArrayValue = array of Variant;
 
   IEventMiddleware = interface

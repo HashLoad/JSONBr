@@ -101,11 +101,16 @@
         <DCCReference Include="test.json_br.pas"/>
         <DCCReference Include="test.xsuper.pas"/>
         <DCCReference Include="..\Source\jsonbr.pas"/>
-        <DCCReference Include="..\Source\Core\jsonbr.builders.pas"/>
-        <DCCReference Include="..\Source\Core\jsonbr.reader.pas"/>
         <DCCReference Include="..\Source\Core\jsonbr.types.pas"/>
         <DCCReference Include="..\Source\Core\jsonbr.utils.pas"/>
-        <DCCReference Include="..\Source\Core\jsonbr.writer.pas"/>
+        <DCCReference Include="superobject\superdate.pas"/>
+        <DCCReference Include="superobject\superobject.pas"/>
+        <DCCReference Include="superobject\supertimezone.pas"/>
+        <DCCReference Include="superobject\supertypes.pas"/>
+        <DCCReference Include="test.superobject.pas"/>
+        <DCCReference Include="test.jsondataobjects.pas"/>
+        <DCCReference Include="JsonDataObjects.pas"/>
+        <DCCReference Include="..\Source\Core\jsonbr.builders.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

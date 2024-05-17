@@ -23,11 +23,16 @@ uses
   test.json_br in 'test.json_br.pas',
   test.xsuper in 'test.xsuper.pas',
   jsonbr in '..\Source\jsonbr.pas',
-  jsonbr.builders in '..\Source\Core\jsonbr.builders.pas',
-  jsonbr.reader in '..\Source\Core\jsonbr.reader.pas',
   jsonbr.types in '..\Source\Core\jsonbr.types.pas',
   jsonbr.utils in '..\Source\Core\jsonbr.utils.pas',
-  jsonbr.writer in '..\Source\Core\jsonbr.writer.pas';
+  superdate in 'superobject\superdate.pas',
+  superobject in 'superobject\superobject.pas',
+  supertimezone in 'superobject\supertimezone.pas',
+  supertypes in 'superobject\supertypes.pas',
+  test.superobject in 'test.superobject.pas',
+  test.jsondataobjects in 'test.jsondataobjects.pas',
+  JsonDataObjects in 'JsonDataObjects.pas',
+  jsonbr.builders in '..\Source\Core\jsonbr.builders.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

@@ -23,7 +23,7 @@ const
   SAMPLE_JSON_1_COUNT = 50000;
   SAMPLE_JSON_1 = // from http://json.org/example.html
     '{' + #13#10 +
-    '"glossary": {' + #13#10 +
+    '"Glossary": {' + #13#10 +
         '"title": "example glossary",' + #13#10 +
         '		"GlossDiv": {' + #13#10 +
             '"title": "S",' + #13#10 +
@@ -68,6 +68,7 @@ begin
     clMaroon: SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),FOREGROUND_GREEN or FOREGROUND_RED or FOREGROUND_INTENSITY);
     clPurple: SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),FOREGROUND_RED or FOREGROUND_BLUE or FOREGROUND_INTENSITY);
     clAqua: SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),FOREGROUND_GREEN or FOREGROUND_BLUE or FOREGROUND_INTENSITY);
+    clYellow: SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED or FOREGROUND_GREEN or FOREGROUND_INTENSITY);
   end;
 end;
 

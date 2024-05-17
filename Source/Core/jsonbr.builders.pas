@@ -66,6 +66,7 @@ type
     function _GetItem(AIndex: Integer): Variant;
     function _GetListType(LRttiType: TRttiType): TRttiType;
     function _GetDataType: TJsonValueKind;
+    procedure _ResizeArraysIfNeeded;
     type
       TJsonParser = record
       private
@@ -1177,7 +1178,6 @@ begin
         Exit;
       end;
     until False;
-    SetLength(AData.FJsonPair.Values, AData.FJsonPair.Count);
   end;
   AData.FJsonPair.Kind := TJsonTypeKind.jtkArray;
   Result := True;
@@ -1211,9 +1211,7 @@ begin
         Exit;
       end;
     until False;
-    SetLength(AData.FJsonPair.Names, AData.FJsonPair.Count);
   end;
-  SetLength(AData.FJsonPair.Values, AData.FJsonPair.Count);
   AData.FJsonPair.Kind := TJsonTypeKind.jtkObject;
   Result := True;
 end;
@@ -1265,11 +1263,7 @@ begin
   else
   if FJsonPair.Kind <> TJsonTypeKind.jtkObject then
     raise EJsonBrException.CreateFmt('AddNameValue(%s) over array', [AName]);
-  if FJsonPair.Count <= Length(FJsonPair.Values) then
-  begin
-    SetLength(FJsonPair.Values, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
-    SetLength(FJsonPair.Names, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
-  end;
+  _ResizeArraysIfNeeded;
   FJsonPair.Values[FJsonPair.Count] := AValue;
   FJsonPair.Names[FJsonPair.Count] := AName;
   Inc(FJsonPair.Count);
@@ -1282,11 +1276,7 @@ begin
   else
   if FJsonPair.Kind <> TJsonTypeKind.jtkArray then
     raise EJsonBrException.Create('AddValue() over object');
-  if FJsonPair.Count <= Length(FJsonPair.Values) then
-  begin
-    SetLength(FJsonPair.Names, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
-    SetLength(FJsonPair.Values, FJsonPair.Count + FJsonPair.Count shr 3 + 32);
-  end;
+  _ResizeArraysIfNeeded;
   FJsonPair.Names[FJsonPair.Count] := IntToStr(FJsonPair.Count);
   FJsonPair.Values[FJsonPair.Count] := AValue;
   Inc(FJsonPair.Count);
@@ -1305,6 +1295,17 @@ begin
   Result := FJsonPair.Kind;
   if (@Self = nil) or (FJsonPair.ValueType <> GJsonVariantType.VarType) then
     Result := TJsonTypeKind.jtkUndefined
+end;
+
+procedure TJsonData._ResizeArraysIfNeeded;
+var
+  LLength: Integer;
+begin
+  LLength := Length(FJsonPair.Names);
+  if LLength > FJsonPair.Count then
+    Exit;
+  SetLength(FJsonPair.Names, LLength + LLength shr 3 + 16);
+  SetLength(FJsonPair.Values, LLength + LLength shr 3 + 16);
 end;
 
 function TJsonData._GetCount: Integer;

@@ -50,21 +50,21 @@ begin
                      .BeginObject('object0')
                        .Add('ID', 1)
                        .Add('Name', 'Json')
+                       .BeginArray('Array')
+                         .BeginObject('object1')
+                           .Add('ID', 2)
+                           .Add('Name', 'Json 2')
+                         .EndObject
+                         .BeginObject('object2')
+                           .Add('ID', 3)
+                           .Add('Name', 'Json 3')
+                           .Add('Salary', 111.50)
+                           .AddDate('Date', Now)
+                           .Add('Active', True)
+                           .AddNull('Nulo', Null)
+                         .EndObject
+                       .EndArray
                      .EndObject
-                     .BeginArray
-                       .BeginObject('object1')
-                         .Add('ID', 2)
-                         .Add('Name', 'Json 2')
-                       .EndObject
-                       .BeginObject('object2')
-                         .Add('ID', 3)
-                         .Add('Name', 'Json 3')
-                         .Add('Salary', 111.50)
-                         .AddDate('Date', Now)
-                         .Add('Active', True)
-                         .AddNull('Nulo', Null)
-                       .EndObject
-                     .EndArray
                    .EndArray
                   .ToJSON);
 end;

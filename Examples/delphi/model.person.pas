@@ -7,6 +7,7 @@ uses
   DB,
   Generics.Collections,
   /// orm
+  ormbr.types.nullable,
   dbcbr.types.mapping,
   dbcbr.mapping.attributes,
   dbcbr.mapping.register;
@@ -42,7 +43,7 @@ type
     FLastName: String;
     FAge: Integer;
     FSalary: Double;
-    FDate: TDateTime;
+    FDate: Nullable<TDateTime>;
     FPessoa: TPersonSub;
     FPessoas: TObjectList<TPersonSub>;
     FBlob: String;
@@ -78,7 +79,7 @@ type
     [Restrictions([NotNull])]
     [Column('Date', ftDateTime)]
     [Dictionary('Nivel','Data de aniversário','Date','','',taRightJustify)]
-    property Date: TDateTime read FDate write FDate;
+    property Date: Nullable<TDateTime> read FDate write FDate;
 
     [Column('Imagem', ftBlob)]
     property Imagem: String read FBlob write FBlob;

@@ -174,7 +174,7 @@ end;
 class function TJsonBr.ObjectListToJsonString<T>(AObjectList: TObjectList<T>;
   AStoreClassName: Boolean): String;
 var
-  LFor: integer;
+  LFor: Integer;
   LResultBuilder: TStringBuilder;
 begin
   LResultBuilder := TStringBuilder.Create;

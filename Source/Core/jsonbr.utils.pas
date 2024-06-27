@@ -25,7 +25,7 @@ var
 begin
   Result := '';
   if AValue = 0 then
-    exit;
+    Exit;
 
   if AUseISO8601DateFormat then
     LDatePart := FormatDateTime('yyyy-mm-dd', AValue)
@@ -33,7 +33,7 @@ begin
     LDatePart := DateToStr(AValue, GJsonBrFormatSettings);
 
   if Frac(AValue) = 0 then
-    Result := ifThen(AUseISO8601DateFormat, LDatePart, TimeToStr(AValue, GJsonBrFormatSettings))
+    Result := ifThen(AUseISO8601DateFormat, LDatePart, DateToStr(AValue, GJsonBrFormatSettings))
   else
   begin
     LTimePart := FormatDateTime('hh:nn:ss', AValue);
@@ -55,7 +55,7 @@ begin
   if not AUseISO8601DateFormat then
   begin
     Result := StrToDateTimeDef(AValue, 0);
-    exit;
+    Exit;
   end;
   LYYYY := 0; LMM := 0; LDD := 0; LHH := 0; LMI := 0; LSS := 0; LMS := 0;
   if TryStrToInt(Copy(AValue, 1, 4), LYYYY) and
